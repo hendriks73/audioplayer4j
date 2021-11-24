@@ -221,7 +221,14 @@ public class JavaPlayer implements AudioPlayer {
             }
             this.audioFileFormat = ExtAudioSystem.getAudioFileFormat(url);
             this.duration = getDuration(audioFileFormat);
-            openLine();
+            try {
+                openLine();
+            } catch(IllegalArgumentException e) {
+                // we weren't able to create a line/output for this file
+                final UnsupportedAudioFileException reE = new UnsupportedAudioFileException(e.getMessage());
+                reE.initCause(e);
+                throw reE;
+            }
             open(url);
             internalSetTime(ZERO);
             this.streamLinePump = new StreamLinePump(stream, line);

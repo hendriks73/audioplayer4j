@@ -44,8 +44,8 @@ public interface AudioDevice {
      *
      * @param info info, describing what's desired
      * @return line
-     * @throws LineUnavailableException if no line conforming to the Info
-     *  instance is available
+     * @throws LineUnavailableException if a matching line is not available due to resource restrictions
+     * @throws IllegalArgumentException if this device does not support any lines matching the description
      */
     Line getLine(Line.Info info) throws LineUnavailableException;
 }
