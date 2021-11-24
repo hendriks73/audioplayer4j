@@ -88,6 +88,8 @@ jobs:
       - name: Jackd (Virtual Audio Device)
         run: |
           sudo apt-get update -y
+          sudo apt-get install -y alsa-base
+          sudo apt-get install -y alsa-utils
           sudo apt-get install -y jackd
 
       - name: Set up Java
@@ -100,6 +102,9 @@ jobs:
 
       - name: Build/test code with Maven
         run: |
+          groups
+          sudo usermod -a -G audio $USER
+          groups
           jackd -rd dummy &
           cat $JAVA_HOME/conf/sound.properties
           sudo echo "javax.sound.sampled.Clip=com.sun.media.sound.DirectAudioDeviceProvider" >> $JAVA_HOME/conf/sound.properties
