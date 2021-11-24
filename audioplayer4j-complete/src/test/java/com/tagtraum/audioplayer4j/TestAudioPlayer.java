@@ -488,6 +488,7 @@ public class TestAudioPlayer {
 
         Thread.sleep(1000);
 
+        assertEquals(2, listener.events.size());
         final Iterator<String> iterator = listener.events.iterator();
 
         assertEquals("started", iterator.next());
