@@ -1,0 +1,60 @@
+name: Deploy
+
+# NOTE
+# secrets.OSSRH_GPG_SECRET_KEY was created with
+#    gpg --export-secret-keys -a <key-id> > secret.txt
+# then all newlines were replaced with literal '\n'
+# see also https://gist.github.com/sualeh/ae78dc16123899d7942bc38baba5203c
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  build:
+
+    runs-on: macos-10.15
+
+    steps:
+      - id: install-secret-key
+        name: Install gpg secret key
+        run: |
+          cat <(echo -e "${{ secrets.OSSRH_GPG_SECRET_KEY }}") | gpg --batch --import
+          gpg --list-secret-keys --keyid-format LONG
+
+      - uses: actions/checkout@v2
+
+      - name: Set up publication to Maven Central
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: 9
+          architecture: x64
+          java-package: jdk+fx
+          cache: 'maven'
+          server-id: ossrh
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+
+      - id: publish-to-central
+        name: Publish to Central Repository
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+          GPG_TTY: $(tty)
+        run: |
+          mvn \
+            --no-transfer-progress \
+            --batch-mode \
+            -Dgpg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} \
+            --activate-profiles release,platform-mac \
+            deploy --file pom.xml
+
+      # deploy javadocs to github pages
+      - name: Deploy Javadocs to GitHub Pages Branch
+        uses: JamesIves/github-pages-deploy-action@4.1.5
+        with:
+          branch: gh-pages
+          folder: audioplayer4j-complete/target/apidocs/

@@ -1,2 +1,2 @@
 # audioplayer4j
-Java Audioplayer
+Simple audio player class for macOS
