@@ -101,4 +101,10 @@ jobs:
       - name: Build/test code with Maven
         run: |
           jackd -rd dummy &
+          cat $JAVA_HOME/conf/sound.properties
+          sudo echo "javax.sound.sampled.Clip=com.sun.media.sound.DirectAudioDeviceProvider" >> $JAVA_HOME/conf/sound.properties
+          sudo echo "javax.sound.sampled.Port=com.sun.media.sound.PortMixerProvider" >> $JAVA_HOME/conf/sound.properties
+          sudo echo "javax.sound.sampled.SourceDataLine=com.sun.media.sound.DirectAudioDeviceProvider" >> $JAVA_HOME/conf/sound.properties
+          sudo echo "javax.sound.sampled.TargetDataLine=com.sun.media.sound.DirectAudioDeviceProvider" >> $JAVA_HOME/conf/sound.properties
+          cat $JAVA_HOME/conf/sound.properties
           xvfb-run mvn -B install --file pom.xml

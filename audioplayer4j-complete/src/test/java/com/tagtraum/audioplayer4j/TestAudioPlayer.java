@@ -486,7 +486,7 @@ public class TestAudioPlayer {
         audioPlayer.setTime(audioPlayer.getDuration().minus(Duration.of(500, MILLIS)));
         audioPlayer.play();
 
-        Thread.sleep(1000);
+        Thread.sleep(3000);
 
         assertEquals(2, listener.events.size());
         final Iterator<String> iterator = listener.events.iterator();
