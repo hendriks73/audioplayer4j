@@ -100,10 +100,13 @@ jobs:
           java-package: jdk+fx
           cache: 'maven'
 
-      - name: Build/test code with Maven
+      - name: Add user to audio group
         run: |
           groups
           sudo usermod -a -G audio $USER
+
+      - name: Build/test code with Maven
+        run: |
           groups
           jackd -rd dummy &
           cat $JAVA_HOME/conf/sound.properties
