@@ -47,24 +47,16 @@ jobs:
     runs-on: windows-2019
     strategy:
       matrix:
-        arch: [x64, x86]
         java: [ 11, 15, 17 ]
-        include:
-          - arch: x64
-            sys: mingw64
-            env: x86_64
-          - arch: x86
-            sys: mingw32
-            env: i686
-    defaults:
-      run:
-        shell: msys2 {0}
+
     steps:
-      - uses: msys2/setup-msys2@v2
-        with:
-          msystem: ${{ matrix.sys }}
-          install: mingw-w64-${{ matrix.env }}-toolchain
-          path-type: inherit
+      - name: Install Scream (Virtual Audio Device)
+        shell: powershell
+        run: |
+          Invoke-WebRequest https://github.com/duncanthrax/scream/releases/download/3.8/Scream3.8.zip -OutFile Scream3.8.zip
+          Expand-Archive -Path Scream3.8.zip -DestinationPath Scream
+          Import-Certificate -FilePath Scream\Install\driver\x64\Scream.cat -CertStoreLocation Cert:\LocalMachine\TrustedPublisher
+          Scream\Install\helpers\devcon-x64.exe install Scream\Install\driver\x64\Scream.inf *Scream
 
       - uses: actions/checkout@v2
 
@@ -92,6 +84,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+
+      - name: Jackd (Virtual Audio Device)
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y jackd
+
       - name: Set up Java
         uses: actions/setup-java@v2
         with:
@@ -101,4 +99,6 @@ jobs:
           cache: 'maven'
 
       - name: Build/test code with Maven
-        run: mvn -B install --file pom.xml
+        run: |
+          jackd -rd dummy &
+          xvfb-run mvn -B install --file pom.xml
