@@ -21,6 +21,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -110,14 +111,14 @@ public class TestAudioPlayerFactory {
     }
 
     public static Stream<URI> testOpenURI() {
-        List<String> resources = Arrays.asList(
+        final List<String> resources = new ArrayList<>(Arrays.asList(
             "test.aiff",
             "test.flac",
             "test.wav",
             "test.mp3",
             "test.ogg",
             "test.wma"
-        );
+        ));
         // m4a may not be supported by default on platforms other than macOS
         if (MAC) {
             resources.add("test.m4a");
