@@ -88,9 +88,7 @@ jobs:
       - name: Jackd (Virtual Audio Device)
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y alsa-base
-          sudo apt-get install -y alsa-utils
-          sudo apt-get install -y jackd
+          sudo apt-get install -y alsa-base alsa-utils jackd2 pulseaudio-module-jack
 
       - name: Set up Java
         uses: actions/setup-java@v2
@@ -100,15 +98,11 @@ jobs:
           java-package: jdk+fx
           cache: 'maven'
 
-      - name: Add user to audio group
-        run: |
-          groups
-          sudo usermod -a -G audio $USER
-
       - name: Build/test code with Maven
         run: |
           groups
           jackd -rd dummy &
+          sleep 2
           cat $JAVA_HOME/conf/sound.properties
           sudo echo "javax.sound.sampled.Clip=com.sun.media.sound.DirectAudioDeviceProvider" >> $JAVA_HOME/conf/sound.properties
           sudo echo "javax.sound.sampled.Port=com.sun.media.sound.PortMixerProvider" >> $JAVA_HOME/conf/sound.properties
