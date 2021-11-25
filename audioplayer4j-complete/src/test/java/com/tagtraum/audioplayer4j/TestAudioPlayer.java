@@ -10,6 +10,7 @@ import com.tagtraum.audioplayer4j.java.JavaPlayer;
 import com.tagtraum.audioplayer4j.javafx.JavaFXPlayer;
 import com.tagtraum.audioplayer4j.macos.AVFoundationPlayer;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.sound.sampled.AudioFileFormat;
@@ -36,6 +37,8 @@ import static java.time.Duration.ZERO;
 import static java.time.temporal.ChronoUnit.MILLIS;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Named.named;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 /**
  * TestAudioPlayer.
@@ -46,7 +49,7 @@ public class TestAudioPlayer {
 
     private static final boolean MAC = System.getProperty("os.name").toLowerCase().contains("mac");
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("players")
     public void testOpenAudioPlayer(final AudioPlayer audioPlayer) throws UnsupportedAudioFileException, IOException {
         final Path file = extractFile("test.wav");
@@ -62,7 +65,7 @@ public class TestAudioPlayer {
         testOpenAudioPlayer(audioPlayer.getURI(), audioPlayer);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("players")
     public void testTimeForFile(final AudioPlayer audioPlayer) throws IOException, InterruptedException, InvocationTargetException, UnsupportedAudioFileException {
 
@@ -129,7 +132,7 @@ public class TestAudioPlayer {
         assertFalse(events.hasNext());
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("players")
     public void testURI(final AudioPlayer audioPlayer) throws IOException, InterruptedException, InvocationTargetException, UnsupportedAudioFileException {
 
@@ -164,7 +167,7 @@ public class TestAudioPlayer {
     }
 
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("players")
     public void testDurationForFile(final AudioPlayer audioPlayer) throws IOException, InterruptedException, InvocationTargetException, UnsupportedAudioFileException {
 
@@ -203,7 +206,7 @@ public class TestAudioPlayer {
         assertFalse(events.hasNext());
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("players")
     public void testVolumeAndMute(final AudioPlayer audioPlayer) throws IOException, InterruptedException, InvocationTargetException, UnsupportedAudioFileException {
 
@@ -273,7 +276,7 @@ public class TestAudioPlayer {
         assertFalse(mutedEvents.hasNext());
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("players")
     public void testVolumeAndGain(final AudioPlayer audioPlayer) throws IOException, InterruptedException, InvocationTargetException, UnsupportedAudioFileException {
 
@@ -362,7 +365,7 @@ public class TestAudioPlayer {
     }
 
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("players")
     public void testPause(final AudioPlayer audioPlayer) throws IOException, InterruptedException, InvocationTargetException, UnsupportedAudioFileException {
 
@@ -431,20 +434,20 @@ public class TestAudioPlayer {
         assertFalse(pausedEvents.hasNext());
     }
 
-    public static Stream<AudioPlayer> players() {
-        final List<AudioPlayer> players = new ArrayList<>();
+    public static Stream<Arguments> players() {
+        final List<Arguments> players = new ArrayList<>();
 
         // always available
-        players.add(new JavaPlayer());
+        players.add(arguments(named("JavaPlayer", new JavaPlayer())));
         // only with JavaFX
-        if (isJavaFXAvailable()) players.add(new JavaFXPlayer());
+        if (isJavaFXAvailable()) players.add(arguments(named("JavaFXPlayer", new JavaFXPlayer())));
         // only on macOS
-        if (MAC) players.add(new AVFoundationPlayer());
+        if (MAC) players.add(arguments(named("AVFoundationPlayer", new AVFoundationPlayer())));
 
         return players.stream();
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("players")
     public void testStarted(final AudioPlayer audioPlayer) throws IOException, InterruptedException, UnsupportedAudioFileException {
 
@@ -472,7 +475,7 @@ public class TestAudioPlayer {
         assertFalse(iterator.hasNext());
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("players")
     public void testFinished(final AudioPlayer audioPlayer) throws IOException, InterruptedException, UnsupportedAudioFileException {
 
@@ -488,7 +491,8 @@ public class TestAudioPlayer {
 
         Thread.sleep(3000);
 
-        assertEquals(2, listener.events.size());
+        assertEquals(2, listener.events.size(),
+            "Before close(). Expected 2 events for " + audioPlayer.getClass().getSimpleName() + " and got: " + listener.events);
         final Iterator<String> iterator = listener.events.iterator();
 
         assertEquals("started", iterator.next());
@@ -500,7 +504,8 @@ public class TestAudioPlayer {
 
         Thread.sleep(200);
 
-        assertEquals(2, listener.events.size());
+        assertEquals(2, listener.events.size(),
+            "After close(). Expected 2 events for " + audioPlayer.getClass().getSimpleName() + " and got: " + listener.events);
     }
 
     /**
