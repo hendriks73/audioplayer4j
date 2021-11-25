@@ -15,6 +15,7 @@ import com.tagtraum.audioplayer4j.device.DefaultAudioDevice;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.*;
 import javax.swing.event.SwingPropertyChangeSupport;
+import java.awt.*;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.FileNotFoundException;
@@ -26,6 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Timer;
 import java.util.*;
 import java.util.concurrent.*;
@@ -50,6 +52,8 @@ public class AVFoundationPlayer implements AudioPlayer {
 
     static {
         NativeLibraryLoader.loadLibrary();
+        // init toolkit, to avoid potential deadlocks later on
+        Toolkit.getDefaultToolkit();
     }
 
     private Cleaner.Cleanable nativeResource;
@@ -367,7 +371,7 @@ public class AVFoundationPlayer implements AudioPlayer {
         }
 
         serializeCall(() -> {
-            final Duration oldTime = Duration.ofMillis(getTime(this.pointers[0]));
+            AVFoundationPlayer.this.time = Duration.ofMillis(getTime(this.pointers[0]));
             setTime(pointers[0], time.toMillis());
             return null;
         });
