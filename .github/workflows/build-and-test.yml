@@ -79,7 +79,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-18.04, ubuntu-latest ]
+        os: [ ubuntu-18.04 ]
         java: [ 11, 15, 17 ]
 
     steps:
@@ -101,11 +101,5 @@ jobs:
       - name: Build/test code with Maven
         run: |
           jackd -rd dummy &
-          sleep 2
-          cat $JAVA_HOME/conf/sound.properties
-          sudo echo "javax.sound.sampled.Clip=com.sun.media.sound.DirectAudioDeviceProvider" >> $JAVA_HOME/conf/sound.properties
-          sudo echo "javax.sound.sampled.Port=com.sun.media.sound.PortMixerProvider" >> $JAVA_HOME/conf/sound.properties
-          sudo echo "javax.sound.sampled.SourceDataLine=com.sun.media.sound.DirectAudioDeviceProvider" >> $JAVA_HOME/conf/sound.properties
-          sudo echo "javax.sound.sampled.TargetDataLine=com.sun.media.sound.DirectAudioDeviceProvider" >> $JAVA_HOME/conf/sound.properties
-          cat $JAVA_HOME/conf/sound.properties
+          sleep 5
           xvfb-run mvn -B install --file pom.xml
