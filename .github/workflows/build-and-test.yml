@@ -100,7 +100,6 @@ jobs:
 
       - name: Build/test code with Maven
         run: |
-          groups
           jackd -rd dummy &
           sleep 2
           cat $JAVA_HOME/conf/sound.properties
