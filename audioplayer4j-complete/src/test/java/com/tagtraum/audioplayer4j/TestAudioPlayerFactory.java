@@ -36,9 +36,11 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class TestAudioPlayerFactory {
 
+    private static final boolean MAC = System.getProperty("os.name").toLowerCase().contains("mac");
+
     @BeforeAll
     public static void removeOldNativeLibs() throws IOException {
-        if (System.getProperty("os.name").toLowerCase().contains("mac")) {
+        if (MAC) {
             final Path path = Paths.get(System.getProperty("java.io.tmpdir"));
             try (final Stream<Path> walk = Files.walk(path, 1)) {
                 final List<Path> dylibs = walk.filter(p -> p.getFileName().toString().endsWith(".dylib")).collect(Collectors.toList());
@@ -113,10 +115,13 @@ public class TestAudioPlayerFactory {
             "test.flac",
             "test.wav",
             "test.mp3",
-            "test.m4a",
             "test.ogg",
             "test.wma"
         );
+        // m4a may not be supported by default on platforms other than macOS
+        if (MAC) {
+            resources.add("test.m4a");
+        }
         return resources.stream().map(TestAudioPlayer::extractFile).map(Path::toUri);
     }
 
