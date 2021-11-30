@@ -467,7 +467,7 @@ public class TestAudioPlayer {
 
         Thread.sleep(200);
 
-        final Iterator<String> iterator = listener.events.iterator();
+        final Iterator<String> iterator = listener.getEvents().iterator();
 
         assertEquals("started", iterator.next());
         assertEquals("finished", iterator.next());
@@ -481,6 +481,8 @@ public class TestAudioPlayer {
 
         final MemoryAudioPlayerListener listener = new MemoryAudioPlayerListener();
         audioPlayer.addAudioPlayerListener(listener);
+        final MemoryPropertyChangeListener timeListener = new MemoryPropertyChangeListener();
+        audioPlayer.addPropertyChangeListener("time", timeListener);
 
         final URI uri = extractFile("test.wav").toUri();
         audioPlayer.open(uri);
@@ -491,9 +493,11 @@ public class TestAudioPlayer {
 
         Thread.sleep(3000);
 
-        assertEquals(2, listener.events.size(),
-            "Before close(). Expected 2 events for " + audioPlayer.getClass().getSimpleName() + " and got: " + listener.events);
-        final Iterator<String> iterator = listener.events.iterator();
+        System.out.println("time events: " + timeListener.getEvents());
+
+        assertEquals(2, listener.getEvents().size(),
+            "Before close(). Expected 2 events for " + audioPlayer.getClass().getSimpleName() + " and got: " + listener.getEvents() + ", time events: " + timeListener.getEvents());
+        final Iterator<String> iterator = listener.getEvents().iterator();
 
         assertEquals("started", iterator.next());
         assertEquals("finished", iterator.next());
@@ -504,8 +508,8 @@ public class TestAudioPlayer {
 
         Thread.sleep(200);
 
-        assertEquals(2, listener.events.size(),
-            "After close(). Expected 2 events for " + audioPlayer.getClass().getSimpleName() + " and got: " + listener.events);
+        assertEquals(2, listener.getEvents().size(),
+            "After close(). Expected 2 events for " + audioPlayer.getClass().getSimpleName() + " and got: " + listener.getEvents());
     }
 
     /**
@@ -602,6 +606,10 @@ public class TestAudioPlayer {
         @Override
         public void finished(final AudioPlayer audioPlayer, final URI uri) {
             events.add("finished");
+        }
+
+        public List<String> getEvents() {
+            return events;
         }
     }
 }
