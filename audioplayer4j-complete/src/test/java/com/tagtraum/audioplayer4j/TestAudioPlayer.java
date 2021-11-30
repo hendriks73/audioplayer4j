@@ -479,6 +479,8 @@ public class TestAudioPlayer {
     @MethodSource("players")
     public void testFinished(final AudioPlayer audioPlayer) throws IOException, InterruptedException, UnsupportedAudioFileException {
 
+        System.out.println("testFinished()");
+
         final MemoryAudioPlayerListener listener = new MemoryAudioPlayerListener();
         audioPlayer.addAudioPlayerListener(listener);
         final MemoryPropertyChangeListener timeListener = new MemoryPropertyChangeListener();

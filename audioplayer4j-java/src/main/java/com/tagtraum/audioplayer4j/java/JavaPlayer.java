@@ -887,10 +887,14 @@ public class JavaPlayer implements AudioPlayer {
                     // seek by raw reading...
                     final Duration streamTime = getStreamTime();
                     final Duration seekTime = getSeekTime();
+                    LOG.info("seekTime=" + seekTime + ", streamTime=" + streamTime);
                     if (seekTime != null && streamTime != null && seekTime.compareTo(streamTime) > 0) {
+                        // skipping ahead
+                        LOG.info("Skipping ahead");
                         continue;
                     }
                     if (seekTime != null) {
+                        LOG.info("Reached seekTime");
                         markLineTimeDiff(seekTime);
                         resetSeekTime();
                         // force fire
