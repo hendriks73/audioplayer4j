@@ -493,8 +493,6 @@ public class TestAudioPlayer {
 
         Thread.sleep(3000);
 
-        System.out.println("time events: " + timeListener.getEvents());
-
         assertEquals(2, listener.getEvents().size(),
             "Before close(). Expected 2 events for " + audioPlayer.getClass().getSimpleName() + " and got: " + listener.getEvents() + ", time events: " + timeListener.getEvents());
         final Iterator<String> iterator = listener.getEvents().iterator();

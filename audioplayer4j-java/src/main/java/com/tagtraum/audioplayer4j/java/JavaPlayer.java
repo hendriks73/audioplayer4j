@@ -882,6 +882,7 @@ public class JavaPlayer implements AudioPlayer {
                         quietClose();
                         break;
                     }
+                    LOG.info("justRead: " + justRead);
 
                     // seek by raw reading...
                     final Duration streamTime = getStreamTime();
@@ -924,6 +925,7 @@ public class JavaPlayer implements AudioPlayer {
                                 LOG.warning("Looks like we have a buffer underrun. Doubling buffer length for NEXT line to " + bufferSizeInSeconds + "s");
                             }
                             final int written = line.write(buf, pos, length);
+                            LOG.info("written: " + written);
                             if (getSeekTime() != null) {
                                 if (LOG.isLoggable(Level.FINE)) LOG.fine("line.flush()");
                                 line.flush();
