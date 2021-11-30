@@ -831,9 +831,22 @@ public class JavaPlayer implements AudioPlayer {
 
         public Duration getTime() {
             final Duration seekTime = getSeekTime();
-            if (seekTime != null) return seekTime;
-            else if (line.isOpen()) return of(line.getMicrosecondPosition() - lineTimeDiff, MICROS);
-            else return getStreamTime();
+            if (seekTime != null) {
+                LOG.info("getTime(), using seektime: " + seekTime);
+                return seekTime;
+            }
+            else if (line.isOpen()) {
+                final Duration d = of(line.getMicrosecondPosition() - lineTimeDiff, MICROS);
+                LOG.info("getTime(), using line time: " + d);
+                LOG.info("line.getMicrosecondPosition(): " + line.getMicrosecondPosition());
+                LOG.info("lineTimeDiff: " + lineTimeDiff);
+                return d;
+            }
+            else {
+                final Duration d = getStreamTime();
+                LOG.info("getTime(), using getStreamTime(): " + d);
+                return d;
+            }
         }
 
         private Duration getStreamTime() {
