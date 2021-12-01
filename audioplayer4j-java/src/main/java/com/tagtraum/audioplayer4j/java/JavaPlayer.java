@@ -833,19 +833,25 @@ public class JavaPlayer implements AudioPlayer {
         public Duration getTime() {
             final Duration seekTime = getSeekTime();
             if (seekTime != null) {
-                LOG.info("getTime(), using seektime: " + seekTime);
+                if (LOG.isLoggable(Level.FINEST)) {
+                    LOG.finest("getTime(), using seektime: " + seekTime);
+                }
                 return seekTime;
             }
             else if (line.isOpen()) {
                 final Duration d = of(line.getMicrosecondPosition() - lineTimeDiff, MICROS);
-                LOG.info("getTime(), using line time: " + d);
-                LOG.info("line.getMicrosecondPosition(): " + line.getMicrosecondPosition());
-                LOG.info("lineTimeDiff: " + lineTimeDiff);
+                if (LOG.isLoggable(Level.FINEST)) {
+                    LOG.finest("getTime(), using line time: " + d);
+                    LOG.finest("line.getMicrosecondPosition(): " + line.getMicrosecondPosition());
+                    LOG.finest("lineTimeDiff: " + lineTimeDiff);
+                }
                 return d;
             }
             else {
                 final Duration d = getStreamTime();
-                LOG.info("getTime(), using getStreamTime(): " + d);
+                if (LOG.isLoggable(Level.FINEST)) {
+                    LOG.finest("getTime(), using getStreamTime(): " + d);
+                }
                 return d;
             }
         }
@@ -875,7 +881,9 @@ public class JavaPlayer implements AudioPlayer {
 
                     final Duration seekTime = getSeekTime();
                     final Duration streamTime = getStreamTime();
-                    LOG.info("seekTime=" + seekTime + ", streamTime=" + streamTime);
+                    if (LOG.isLoggable(Level.FINE)) {
+                        LOG.fine("seekTime=" + seekTime + ", streamTime=" + streamTime);
+                    }
 
                     if (seekTime == null || streamTime == null) {
                         // regular read (no seeking)
@@ -899,9 +907,11 @@ public class JavaPlayer implements AudioPlayer {
                     } else {
                         // we are in seek mode
 
-                        if (seekTime.compareTo(streamTime) > 0) {
+                        if (seekTime.compareTo(streamTime) >= 0) {
                             // keep on reading, until we reach seekTime
-                            LOG.info("seekTime > streamTime: Skipping ahead");
+                            if (LOG.isLoggable(Level.FINE)) {
+                                LOG.fine("seekTime >= streamTime: Skipping ahead");
+                            }
                             final Duration timeToSkip = seekTime.minus(streamTime);
                             int stillToSkip = (int)(timeToSkip.toMillis() * lineFormat.getSampleRate() * lineFormat.getFrameSize() / 1000L);
                             justRead = 0;
@@ -923,14 +933,18 @@ public class JavaPlayer implements AudioPlayer {
                                     }
                                 }
                             }
-                            LOG.info("Reached seekTime");
+                            if (LOG.isLoggable(Level.FINE)) {
+                                LOG.fine("Reached seekTime");
+                            }
                             markLineTimeDiff(seekTime);
                             resetSeekTime();
                             // force fire
                             forceInternalSetTime(getTime());
                         } else {
                             // we've already read past seekTime: we need to re-open the stream
-                            LOG.info("seekTime < bufferStartTime: re-open stream");
+                            if (LOG.isLoggable(Level.FINE)) {
+                                LOG.fine("seekTime < streamTime: re-open stream");
+                            }
                             try {
                                 reopen();
                             } catch (UnsupportedAudioFileException | LineUnavailableException | ExecutionException e) {
@@ -940,7 +954,9 @@ public class JavaPlayer implements AudioPlayer {
                         }
                     }
 
-                    LOG.info("justRead: " + justRead);
+                    if (LOG.isLoggable(Level.FINE)) {
+                        LOG.fine("justRead: " + justRead);
+                    }
 
                     // workaround missing controls for 24 bit audio
                     if (useCustomGainControl) {
@@ -969,9 +985,13 @@ public class JavaPlayer implements AudioPlayer {
                                 LOG.warning("Looks like we have a buffer underrun. Doubling buffer length for NEXT line to " + bufferSizeInSeconds + "s");
                             }
                             final int written = line.write(buf, pos, length);
-                            LOG.info("written: " + written);
+                            if (LOG.isLoggable(Level.FINE)) {
+                                LOG.fine("written: " + written);
+                            }
                             if (getSeekTime() != null) {
-                                if (LOG.isLoggable(Level.FINE)) LOG.fine("line.flush()");
+                                if (LOG.isLoggable(Level.FINE)) {
+                                    LOG.fine("line.flush()");
+                                }
                                 line.flush();
                                 break;
                             }
