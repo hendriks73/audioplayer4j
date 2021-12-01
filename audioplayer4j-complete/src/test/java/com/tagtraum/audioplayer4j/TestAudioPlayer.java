@@ -115,6 +115,8 @@ public class TestAudioPlayer {
         SwingUtilities.invokeAndWait(() -> {
         });
 
+        System.out.println("testTimeForFile(" + audioPlayer.getClass().getSimpleName() + ") timeEvents = " + listener.getEvents());
+
         final Iterator<PropertyChangeEvent> events = listener.getEvents().iterator();
 
         final PropertyChangeEvent openEvent = events.next();
@@ -490,19 +492,6 @@ public class TestAudioPlayer {
         assertFalse(pausedEvents.hasNext());
     }
 
-    public static Stream<Arguments> players() {
-        final List<Arguments> players = new ArrayList<>();
-
-        // always available
-        players.add(arguments(named("JavaPlayer", new JavaPlayer())));
-        // only with JavaFX
-        if (isJavaFXAvailable()) players.add(arguments(named("JavaFXPlayer", new JavaFXPlayer())));
-        // only on macOS
-        if (MAC) players.add(arguments(named("AVFoundationPlayer", new AVFoundationPlayer())));
-
-        return players.stream();
-    }
-
     @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("players")
     public void testStarted(final AudioPlayer audioPlayer) throws IOException, InterruptedException, UnsupportedAudioFileException {
@@ -606,6 +595,19 @@ public class TestAudioPlayer {
         assertNotNull(player.getDuration());
         assertFalse(player.getDuration().isNegative());
         assertFalse(player.getDuration().isZero());
+    }
+
+    public static Stream<Arguments> players() {
+        final List<Arguments> players = new ArrayList<>();
+
+        // always available
+        players.add(arguments(named("JavaPlayer", new JavaPlayer())));
+        // only with JavaFX
+        if (isJavaFXAvailable()) players.add(arguments(named("JavaFXPlayer", new JavaFXPlayer())));
+        // only on macOS
+        if (MAC) players.add(arguments(named("AVFoundationPlayer", new AVFoundationPlayer())));
+
+        return players.stream();
     }
 
     public static Path extractFile(final String resource) {
