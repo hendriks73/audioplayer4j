@@ -29,14 +29,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
-import static java.time.Duration.*;
 import static java.time.Duration.ZERO;
+import static java.time.Duration.of;
 import static java.time.temporal.ChronoUnit.MICROS;
 import static java.time.temporal.ChronoUnit.NANOS;
 import static javax.sound.sampled.AudioFileFormat.Type.AIFF;
@@ -284,7 +285,7 @@ public class JavaPlayer implements AudioPlayer {
     }
 
 
-    private void reOpenSong() throws InterruptedException, UnsupportedAudioFileException, LineUnavailableException, ExecutionException, IOException {
+    private void reopen() throws InterruptedException, UnsupportedAudioFileException, LineUnavailableException, ExecutionException, IOException {
         if (LOG.isLoggable(Level.FINE)) LOG.fine("Re-opening " + song);
         // ensure line is still open, if not re-open
         if (line != null && !line.isOpen()) {
@@ -299,7 +300,7 @@ public class JavaPlayer implements AudioPlayer {
             if (Files.notExists(file) || !Files.isReadable(file)) throw new FileNotFoundException(file.toString());
         }
         open(url);
-        forceInternalSetTime(ZERO);
+//        forceInternalSetTime(ZERO);
         this.streamLinePump = new StreamLinePump(stream, line);
         this.serializer.submit(streamLinePump);
     }
@@ -872,36 +873,75 @@ public class JavaPlayer implements AudioPlayer {
 
                     if (stopped) throw new InterruptedException("Stopping " + this);
 
-                    justRead = stream.read(buf);
-                    if (justRead < 0) {
-                        // stream has ended
-                        if (LOG.isLoggable(Level.FINE)) LOG.fine("line.drain()");
-                        line.drain();
-                        fireFinished();
-                        if (stopped) throw new InterruptedException("Stopping " + this);
-                        quietClose();
-                        break;
+                    final Duration seekTime = getSeekTime();
+                    final Duration streamTime = getStreamTime();
+                    LOG.info("seekTime=" + seekTime + ", streamTime=" + streamTime);
+
+                    if (seekTime == null || streamTime == null) {
+                        // regular read (no seeking)
+                        justRead = stream.read(buf);
+                        if (justRead < 0) {
+                            if (seekTime == null) {
+                                // stream has ended
+                                if (LOG.isLoggable(Level.FINE)) LOG.fine("line.drain()");
+                                line.drain();
+                                if (stopped) throw new InterruptedException("Stopping " + this);
+                                quietClose();
+                                break;
+                            } else {
+                                // we are still seeking and should not simply
+                                // close the stream...
+                                // instead, pretend we have read nothing
+                                justRead = 0;
+                            }
+                        }
+                        internalSetTime(getTime());
+                    } else {
+                        // we are in seek mode
+
+                        if (seekTime.compareTo(streamTime) > 0) {
+                            // keep on reading, until we reach seekTime
+                            LOG.info("seekTime > streamTime: Skipping ahead");
+                            final Duration timeToSkip = seekTime.minus(streamTime);
+                            int stillToSkip = (int)(timeToSkip.toMillis() * lineFormat.getSampleRate() * lineFormat.getFrameSize() / 1000L);
+                            justRead = 0;
+                            while (stillToSkip > 0) {
+                                justRead = stream.read(buf);
+                                if (justRead < 0) {
+                                    // stream end - seek time is unreachable
+                                    quietClose();
+                                    return;
+                                } else {
+                                    if (justRead > stillToSkip) {
+                                        // we have already read audio we want to play
+                                        // lets drop the parts we don't want to play
+                                        System.arraycopy(buf, stillToSkip, buf, 0, justRead-stillToSkip);
+                                        justRead = justRead - stillToSkip;
+                                        stillToSkip = 0;
+                                    } else {
+                                        stillToSkip -= justRead;
+                                    }
+                                }
+                            }
+                            LOG.info("Reached seekTime");
+                            markLineTimeDiff(seekTime);
+                            resetSeekTime();
+                            // force fire
+                            forceInternalSetTime(getTime());
+                        } else {
+                            // we've already read past seekTime: we need to re-open the stream
+                            LOG.info("seekTime < bufferStartTime: re-open stream");
+                            try {
+                                reopen();
+                            } catch (UnsupportedAudioFileException | LineUnavailableException | ExecutionException e) {
+                                LOG.log(Level.SEVERE, "Failed to seek, re-open " + getURI(), e);
+                            }
+                            return;
+                        }
                     }
+
                     LOG.info("justRead: " + justRead);
 
-                    // seek by raw reading...
-                    final Duration streamTime = getStreamTime();
-                    final Duration seekTime = getSeekTime();
-                    LOG.info("seekTime=" + seekTime + ", streamTime=" + streamTime);
-                    if (seekTime != null && streamTime != null && seekTime.compareTo(streamTime) > 0) {
-                        // skipping ahead
-                        LOG.info("Skipping ahead");
-                        continue;
-                    }
-                    if (seekTime != null) {
-                        LOG.info("Reached seekTime");
-                        markLineTimeDiff(seekTime);
-                        resetSeekTime();
-                        // force fire
-                        forceInternalSetTime(getTime());
-                    } else {
-                        internalSetTime(getTime());
-                    }
                     // workaround missing controls for 24 bit audio
                     if (useCustomGainControl) {
                         adjustVolume(buf);
@@ -986,7 +1026,7 @@ public class JavaPlayer implements AudioPlayer {
                 } catch (IOException e) {
                     LOG.log(Level.WARNING, "Failed to seek to time " + seekTime + "ms. We assume the stream needs to be re-opened.", e);
                     try {
-                        JavaPlayer.this.reOpenSong();
+                        JavaPlayer.this.reopen();
                     } catch (UnsupportedAudioFileException | LineUnavailableException | ExecutionException | IOException e1) {
                         LOG.log(Level.SEVERE, "Failed to re-open " + song, e1);
                     }

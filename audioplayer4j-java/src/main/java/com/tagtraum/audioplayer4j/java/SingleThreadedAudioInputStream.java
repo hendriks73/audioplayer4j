@@ -180,6 +180,7 @@ public class SingleThreadedAudioInputStream implements AutoCloseable {
         }
     }
 
+
     public int read(final byte[] buf) throws IOException {
         // make sure we have something to read
         if (bufferQueue.isEmpty()) readAhead(buf.length);

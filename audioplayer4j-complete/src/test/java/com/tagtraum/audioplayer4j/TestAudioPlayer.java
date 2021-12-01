@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static java.time.Duration.ZERO;
+import static java.time.Duration.ofMillis;
 import static java.time.temporal.ChronoUnit.MILLIS;
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.*;
@@ -76,16 +77,23 @@ public class TestAudioPlayer {
 
         audioPlayer.open(file.toUri());
 
-        assertThrows(IllegalArgumentException.class, () -> audioPlayer.setTime(Duration.ofMillis(-100)));
+        assertThrows(IllegalArgumentException.class, () -> audioPlayer.setTime(ofMillis(-100)));
         assertThrows(NullPointerException.class, () -> audioPlayer.setTime(null));
 
         assertEquals(ZERO, audioPlayer.getTime());
-        audioPlayer.setTime(Duration.ofMillis(100));
+        audioPlayer.setTime(ofMillis(500));
 
         // give it a second, some players need some time for seeking
         Thread.sleep(500);
 
-        assertEquals(Duration.ofMillis(100), audioPlayer.getTime());
+        assertEquals(ofMillis(500), audioPlayer.getTime());
+
+        audioPlayer.setTime(ofMillis(200));
+
+        // give it a second, some players need some time for seeking
+        Thread.sleep(500);
+
+        assertEquals(ofMillis(200), audioPlayer.getTime());
 
         // set time greater than duration
         final Duration duration = audioPlayer.getDuration();
@@ -100,7 +108,7 @@ public class TestAudioPlayer {
         audioPlayer.close();
 
         assertThrows(IllegalStateException.class, () -> {
-            audioPlayer.setTime(Duration.ofMillis(100));
+            audioPlayer.setTime(ofMillis(100));
         });
 
         // sync with EDT
@@ -117,12 +125,17 @@ public class TestAudioPlayer {
         final PropertyChangeEvent seekEvent = events.next();
         assertEquals("time", seekEvent.getPropertyName());
         assertEquals(ZERO, seekEvent.getOldValue());
-        assertEquals(Duration.ofMillis(100), seekEvent.getNewValue());
+        assertEquals(ofMillis(500), seekEvent.getNewValue());
 
         final PropertyChangeEvent seekEvent2 = events.next();
         assertEquals("time", seekEvent2.getPropertyName());
-        assertEquals(Duration.ofMillis(100), seekEvent2.getOldValue());
-        assertEquals(duration, seekEvent2.getNewValue());
+        assertEquals(ofMillis(500), seekEvent2.getOldValue());
+        assertEquals(ofMillis(200), seekEvent2.getNewValue());
+
+        final PropertyChangeEvent seekEvent3 = events.next();
+        assertEquals("time", seekEvent3.getPropertyName());
+        assertEquals(ofMillis(200), seekEvent3.getOldValue());
+        assertEquals(duration, seekEvent3.getNewValue());
 
         final PropertyChangeEvent closeEvent = events.next();
         assertEquals("time", closeEvent.getPropertyName());
@@ -131,6 +144,46 @@ public class TestAudioPlayer {
 
         assertFalse(events.hasNext());
     }
+
+
+    @ParameterizedTest(name = "{index}: {0}")
+    @MethodSource("players")
+    public void testTimeForFileWhilePlaying(final AudioPlayer audioPlayer) throws IOException, InterruptedException, InvocationTargetException, UnsupportedAudioFileException {
+
+        final MemoryPropertyChangeListener listener = new MemoryPropertyChangeListener();
+        audioPlayer.addPropertyChangeListener("time", listener);
+
+        final Path file = extractFile("test.wav");
+
+        audioPlayer.open(file.toUri());
+        assertEquals(ZERO, audioPlayer.getTime());
+        audioPlayer.play();
+
+        audioPlayer.setTime(ofMillis(500));
+
+        // give it a second, some players need some time for seeking
+        Thread.sleep(500);
+
+        // should be between 500 and 1200 now
+        final Duration time0 = audioPlayer.getTime();
+        assertNotNull(time0, "Player time must not be null, but apparently is.");
+        assertTrue(time0.compareTo(ofMillis(500)) >= 0, "Time should be greater than/equal to 0.5s, but isn't: " + time0);
+        assertTrue(time0.compareTo(ofMillis(1200)) < 0, "Time should be less than 1.2s, but isn't: " + time0);
+
+        audioPlayer.setTime(ofMillis(200));
+
+        // give it a second, some players need some time for seeking
+        Thread.sleep(500);
+
+        // should be between 200 and 900 now
+        final Duration time1 = audioPlayer.getTime();
+        assertNotNull(time1, "Player time must not be null, but apparently is.");
+        assertTrue(time1.compareTo(ofMillis(200)) >= 0, "Time should be greater than/equal to 0.2s, but isn't: " + time1);
+        assertTrue(time1.compareTo(ofMillis(900)) < 0, "Time should be less than 0.9s, but isn't: " + time1);
+
+        audioPlayer.close();
+    }
+
 
     @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("players")
@@ -236,6 +289,9 @@ public class TestAudioPlayer {
         assertEquals(0.5f, audioPlayer.getVolume());
 
         audioPlayer.setMuted(false);
+
+        // give it some time
+        Thread.sleep(200);
 
         assertFalse(audioPlayer.isMuted());
         assertEquals(0.5f, audioPlayer.getVolume());
