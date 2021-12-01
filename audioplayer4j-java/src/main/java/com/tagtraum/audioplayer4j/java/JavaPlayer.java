@@ -231,7 +231,7 @@ public class JavaPlayer implements AudioPlayer {
                 throw reE;
             }
             open(url);
-            internalSetTime(ZERO);
+            internalSetTime(ZERO, false);
             this.streamLinePump = new StreamLinePump(stream, line);
             this.serializer.submit(streamLinePump);
             this.unstarted = true;
@@ -440,7 +440,7 @@ public class JavaPlayer implements AudioPlayer {
         final Duration oldDuration = duration;
         final boolean oldPaused = paused;
         quietClose();
-        internalSetTime(null);
+        internalSetTime(null, false);
         this.paused = true;
         propertyChangeSupport.firePropertyChange("uri", oldSong, this.song);
         propertyChangeSupport.firePropertyChange("duration", oldDuration, this.duration);
@@ -647,20 +647,12 @@ public class JavaPlayer implements AudioPlayer {
     private synchronized void setSeekTime(final Duration seekTime) {
         this.seekTime = seekTime;
         if (seekTime != null) {
-            forceInternalSetTime(seekTime);
+            internalSetTime(seekTime, true);
         }
     }
 
     private synchronized void resetSeekTime() {
         setSeekTime(null);
-    }
-
-    private void internalSetTime(final Duration time) {
-        internalSetTime(time, false);
-    }
-
-    private void forceInternalSetTime(final Duration time) {
-        internalSetTime(time, true);
     }
 
     private void internalSetTime(final Duration time, final boolean forceFire) {
@@ -831,29 +823,30 @@ public class JavaPlayer implements AudioPlayer {
         }
 
         public Duration getTime() {
+            final Duration time;
             final Duration seekTime = getSeekTime();
             if (seekTime != null) {
+                time = seekTime;
                 if (LOG.isLoggable(Level.FINEST)) {
-                    LOG.finest("getTime(), using seektime: " + seekTime);
+                    LOG.finest("getTime(), using seekTime: " + time);
                 }
-                return seekTime;
             }
             else if (line.isOpen()) {
-                final Duration d = of(line.getMicrosecondPosition() - lineTimeDiff, MICROS);
+                time = of(line.getMicrosecondPosition() - lineTimeDiff, MICROS);
                 if (LOG.isLoggable(Level.FINEST)) {
-                    LOG.finest("getTime(), using line time: " + d);
+                    LOG.finest("getTime(), using line time: " + time);
                     LOG.finest("line.getMicrosecondPosition(): " + line.getMicrosecondPosition());
                     LOG.finest("lineTimeDiff: " + lineTimeDiff);
                 }
-                return d;
             }
             else {
-                final Duration d = getStreamTime();
+                time = getStreamTime();
                 if (LOG.isLoggable(Level.FINEST)) {
-                    LOG.finest("getTime(), using getStreamTime(): " + d);
+                    LOG.finest("getTime(), using getStreamTime(): " + time);
                 }
-                return d;
             }
+            LOG.info("time=" + time + ", seekTime=" + seekTime + ", line.isOpen=" + (line != null && line.isOpen()) + ", streamTime=" + getStreamTime());
+            return time;
         }
 
         private Duration getStreamTime() {
@@ -903,7 +896,7 @@ public class JavaPlayer implements AudioPlayer {
                                 justRead = 0;
                             }
                         }
-                        internalSetTime(getTime());
+                        internalSetTime(getTime(), false);
                     } else {
                         // we are in seek mode
 
@@ -939,7 +932,7 @@ public class JavaPlayer implements AudioPlayer {
                             markLineTimeDiff(seekTime);
                             resetSeekTime();
                             // force fire
-                            forceInternalSetTime(getTime());
+                            internalSetTime(getTime(), true);
                         } else {
                             // we've already read past seekTime: we need to re-open the stream
                             if (LOG.isLoggable(Level.FINE)) {
@@ -996,7 +989,7 @@ public class JavaPlayer implements AudioPlayer {
                                 break;
                             }
                             pos += written;
-                            internalSetTime(getTime());
+                            internalSetTime(getTime(), false);
                         }
                     }
                 }
