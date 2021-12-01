@@ -107,42 +107,40 @@ public class TestAudioPlayer {
 
         audioPlayer.close();
 
-        assertThrows(IllegalStateException.class, () -> {
-            audioPlayer.setTime(ofMillis(100));
-        });
+        assertThrows(IllegalStateException.class, () -> audioPlayer.setTime(ofMillis(100)));
 
         // sync with EDT
-        SwingUtilities.invokeAndWait(() -> {
-        });
+        SwingUtilities.invokeAndWait(() -> {});
 
-        System.out.println("testTimeForFile(" + audioPlayer.getClass().getSimpleName() + ") timeEvents = " + listener.getEvents());
+        final String name = audioPlayer.getClass().getSimpleName();
+        final String message = "Failure for " + name + ". Time events=" + listener.getEvents();
 
         final Iterator<PropertyChangeEvent> events = listener.getEvents().iterator();
 
         final PropertyChangeEvent openEvent = events.next();
         assertEquals("time", openEvent.getPropertyName());
-        assertNull(openEvent.getOldValue());
-        assertEquals(ZERO, openEvent.getNewValue());
+        assertNull(openEvent.getOldValue(), message);
+        assertEquals(ZERO, openEvent.getNewValue(), message);
 
         final PropertyChangeEvent seekEvent = events.next();
         assertEquals("time", seekEvent.getPropertyName());
-        assertEquals(ZERO, seekEvent.getOldValue());
-        assertEquals(ofMillis(500), seekEvent.getNewValue());
+        assertEquals(ZERO, seekEvent.getOldValue(), message);
+        assertEquals(ofMillis(500), seekEvent.getNewValue(), message);
 
         final PropertyChangeEvent seekEvent2 = events.next();
         assertEquals("time", seekEvent2.getPropertyName());
-        assertEquals(ofMillis(500), seekEvent2.getOldValue());
-        assertEquals(ofMillis(200), seekEvent2.getNewValue());
+        assertEquals(ofMillis(500), seekEvent2.getOldValue(), message);
+        assertEquals(ofMillis(200), seekEvent2.getNewValue(), message);
 
         final PropertyChangeEvent seekEvent3 = events.next();
         assertEquals("time", seekEvent3.getPropertyName());
-        assertEquals(ofMillis(200), seekEvent3.getOldValue());
-        assertEquals(duration, seekEvent3.getNewValue());
+        assertEquals(ofMillis(200), seekEvent3.getOldValue(), message);
+        assertEquals(duration, seekEvent3.getNewValue(), message);
 
         final PropertyChangeEvent closeEvent = events.next();
         assertEquals("time", closeEvent.getPropertyName());
-        assertEquals(duration, closeEvent.getOldValue());
-        assertNull(closeEvent.getNewValue());
+        assertEquals(duration, closeEvent.getOldValue(), message);
+        assertNull(closeEvent.getNewValue(), message);
 
         assertFalse(events.hasNext());
     }
@@ -203,8 +201,7 @@ public class TestAudioPlayer {
         assertNull(audioPlayer.getURI());
 
         // sync with EDT
-        SwingUtilities.invokeAndWait(() -> {
-        });
+        SwingUtilities.invokeAndWait(() -> {});
 
         final Iterator<PropertyChangeEvent> events = listener.getEvents().iterator();
 
@@ -243,8 +240,7 @@ public class TestAudioPlayer {
         assertNull(audioPlayer.getDuration());
 
         // sync with EDT
-        SwingUtilities.invokeAndWait(() -> {
-        });
+        SwingUtilities.invokeAndWait(() -> {});
 
         final Iterator<PropertyChangeEvent> events = listener.getEvents().iterator();
 
@@ -302,8 +298,7 @@ public class TestAudioPlayer {
 
 
         // sync with EDT
-        SwingUtilities.invokeAndWait(() -> {
-        });
+        SwingUtilities.invokeAndWait(() -> {});
 
         final Iterator<PropertyChangeEvent> volumeEvents = volumeListener.getEvents().iterator();
 
@@ -385,8 +380,7 @@ public class TestAudioPlayer {
 
 
         // sync with EDT
-        SwingUtilities.invokeAndWait(() -> {
-        });
+        SwingUtilities.invokeAndWait(() -> {});
 
         final Iterator<PropertyChangeEvent> volumeEvents = volumeListener.getEvents().iterator();
 
@@ -464,8 +458,7 @@ public class TestAudioPlayer {
 
 
         // sync with EDT
-        SwingUtilities.invokeAndWait(() -> {
-        });
+        SwingUtilities.invokeAndWait(() -> {});
 
         final Iterator<PropertyChangeEvent> pausedEvents = pausedListener.getEvents().iterator();
 
