@@ -175,10 +175,14 @@ public class TestAudioPlayer {
         Thread.sleep(500);
 
         // should be between 500 and 1200 now
+        final String name = audioPlayer.getClass().getSimpleName();
+        final long start0 = System.nanoTime();
         final Duration time0 = audioPlayer.getTime();
+        final long timeCallDuration0 = (System.nanoTime() - start0) / 1000L;
+        System.out.println("timeCallDuration0 = " + timeCallDuration0);
         assertNotNull(time0, "Player time must not be null, but apparently is.");
-        assertTrue(time0.compareTo(ofMillis(500)) >= 0, "Time should be greater than/equal to 0.5s, but isn't: " + time0);
-        assertTrue(time0.compareTo(ofMillis(1200)) < 0, "Time should be less than 1.2s, but isn't: " + time0);
+        assertTrue(time0.compareTo(ofMillis(500 + timeCallDuration0)) >= 0, name + ": Time should be greater than/equal to 0.5s (+" + timeCallDuration0 + "micros), but isn't: " + time0);
+        assertTrue(time0.compareTo(ofMillis(1200 + timeCallDuration0)) < 0, name + ": Time should be less than 1.2s (+" + timeCallDuration0 + "micros), but isn't: " + time0);
 
         audioPlayer.setTime(ofMillis(200));
 
@@ -186,10 +190,13 @@ public class TestAudioPlayer {
         Thread.sleep(500);
 
         // should be between 200 and 900 now
+        final long start1 = System.nanoTime();
         final Duration time1 = audioPlayer.getTime();
+        final long timeCallDuration1 = (System.nanoTime() - start1) / 1000L;
+        System.out.println("timeCallDuration1 = " + timeCallDuration1);
         assertNotNull(time1, "Player time must not be null, but apparently is.");
-        assertTrue(time1.compareTo(ofMillis(200)) >= 0, "Time should be greater than/equal to 0.2s, but isn't: " + time1);
-        assertTrue(time1.compareTo(ofMillis(900)) < 0, "Time should be less than 0.9s, but isn't: " + time1);
+        assertTrue(time1.compareTo(ofMillis(200 + timeCallDuration1)) >= 0, name + ": Time should be greater than/equal to 0.2s (+" + timeCallDuration0 + "micros), but isn't: " + time1);
+        assertTrue(time1.compareTo(ofMillis(900 + timeCallDuration1)) < 0, name + ": Time should be less than 0.9s (+" + timeCallDuration0 + "micros), but isn't: " + time1);
 
         audioPlayer.close();
     }
