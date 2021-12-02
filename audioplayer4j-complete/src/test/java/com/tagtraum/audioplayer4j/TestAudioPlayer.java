@@ -7,6 +7,8 @@
 package com.tagtraum.audioplayer4j;
 
 import com.tagtraum.audioplayer4j.java.JavaPlayer;
+import com.tagtraum.audioplayer4j.javafx.JavaFXPlayer;
+import com.tagtraum.audioplayer4j.macos.AVFoundationPlayer;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -65,9 +67,13 @@ public class TestAudioPlayer {
         testOpenAudioPlayer(audioPlayer.getURI(), audioPlayer);
     }
 
+    @RepeatedTest(10)
+    public void repeatedTestTimeForFile() throws UnsupportedAudioFileException, IOException, InterruptedException, InvocationTargetException {
+        testTimeForFile(new JavaPlayer());
+    }
+
     @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("players")
-    @RepeatedTest(10)
     public void testTimeForFile(final AudioPlayer audioPlayer) throws IOException, InterruptedException, InvocationTargetException, UnsupportedAudioFileException {
 
         final MemoryPropertyChangeListener listener = new MemoryPropertyChangeListener();
@@ -145,10 +151,13 @@ public class TestAudioPlayer {
         assertFalse(events.hasNext());
     }
 
+    @RepeatedTest(10)
+    public void repeatedTestTimeForFileWhilePlaying() throws UnsupportedAudioFileException, IOException, InterruptedException, InvocationTargetException {
+        testTimeForFileWhilePlaying(new JavaPlayer());
+    }
 
     @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("players")
-    @RepeatedTest(10)
     public void testTimeForFileWhilePlaying(final AudioPlayer audioPlayer) throws IOException, InterruptedException, InvocationTargetException, UnsupportedAudioFileException {
 
         final MemoryPropertyChangeListener listener = new MemoryPropertyChangeListener();
@@ -597,9 +606,9 @@ public class TestAudioPlayer {
         // always available
         players.add(arguments(named("JavaPlayer", new JavaPlayer())));
         // only with JavaFX
-//        if (isJavaFXAvailable()) players.add(arguments(named("JavaFXPlayer", new JavaFXPlayer())));
+        if (isJavaFXAvailable()) players.add(arguments(named("JavaFXPlayer", new JavaFXPlayer())));
         // only on macOS
-//        if (MAC) players.add(arguments(named("AVFoundationPlayer", new AVFoundationPlayer())));
+        if (MAC) players.add(arguments(named("AVFoundationPlayer", new AVFoundationPlayer())));
 
         return players.stream();
     }
