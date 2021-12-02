@@ -997,8 +997,8 @@ public class JavaPlayer implements AudioPlayer {
                                 LOG.warning("Looks like we have a buffer underrun. Doubling buffer length for NEXT line to " + bufferSizeInSeconds + "s");
                             }
                             final int written = line.write(buf, pos, length);
-                            if (LOG.isLoggable(Level.FINE)) {
-                                LOG.fine("written: " + written);
+                            if (LOG.isLoggable(Level.INFO)) {
+                                LOG.info("written: " + written);
                             }
                             // break out of write-look for seeking
                             if (getSeekTime() != null) {
