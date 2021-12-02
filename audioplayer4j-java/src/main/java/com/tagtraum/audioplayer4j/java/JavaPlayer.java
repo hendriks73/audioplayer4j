@@ -994,6 +994,9 @@ public class JavaPlayer implements AudioPlayer {
                         final int available = line.available();
                         final int length = Math.min(available, justRead - pos);
                         if (length == 0) {
+                            if (LOG.isLoggable(Level.INFO)) {
+                                LOG.info("length=" + length + ", available=" + available + ", stillToWrite=" + (justRead - pos) + ", line.isActive()=" + line.isActive());
+                            }
                             synchronized (this) {
                                 try {
                                     this.wait(50);
