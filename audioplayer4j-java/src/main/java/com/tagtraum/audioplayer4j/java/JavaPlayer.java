@@ -286,7 +286,7 @@ public class JavaPlayer implements AudioPlayer {
 
 
     private void reopen() throws InterruptedException, UnsupportedAudioFileException, LineUnavailableException, ExecutionException, IOException {
-        if (LOG.isLoggable(Level.FINE)) LOG.fine("Re-opening " + song);
+        if (LOG.isLoggable(Level.INFO)) LOG.info("Re-opening " + song);
         // ensure line is still open, if not re-open
         if (line != null && !line.isOpen()) {
             openLine();
@@ -893,12 +893,20 @@ public class JavaPlayer implements AudioPlayer {
                     }
 
                     if (seekTime == null || streamTime == null) {
+                        if (LOG.isLoggable(Level.INFO)) {
+                            LOG.info("Reading, NOT seeking");
+                        }
                         // regular read (no seeking)
                         justRead = stream.read(buf);
                         if (justRead < 0) {
+                            if (LOG.isLoggable(Level.INFO)) {
+                                LOG.info("Stream has ended.");
+                            }
                             if (seekTime == null) {
                                 // stream has ended
-                                if (LOG.isLoggable(Level.FINE)) LOG.fine("line.drain()");
+                                if (LOG.isLoggable(Level.INFO)) {
+                                    LOG.info("line.drain()");
+                                }
                                 line.drain();
                                 if (stopped) throw new InterruptedException("Stopping " + this);
                                 quietClose();
@@ -912,12 +920,15 @@ public class JavaPlayer implements AudioPlayer {
                         }
                         internalSetTime(getTime(), false);
                     } else {
+                        if (LOG.isLoggable(Level.INFO)) {
+                            LOG.info("Seeking, NOT reading");
+                        }
                         // we are in seek mode
 
                         if (seekTime.compareTo(streamTime) >= 0) {
                             // keep on reading, until we reach seekTime
-                            if (LOG.isLoggable(Level.FINE)) {
-                                LOG.fine("seekTime >= streamTime: Skipping ahead");
+                            if (LOG.isLoggable(Level.INFO)) {
+                                LOG.info("seekTime >= streamTime: Skipping ahead");
                             }
                             final Duration timeToSkip = seekTime.minus(streamTime);
                             long bytesStillToSkip;
@@ -966,8 +977,8 @@ public class JavaPlayer implements AudioPlayer {
                         }
                     }
 
-                    if (LOG.isLoggable(Level.FINE)) {
-                        LOG.fine("justRead: " + justRead);
+                    if (LOG.isLoggable(Level.INFO)) {
+                        LOG.info("justRead: " + justRead);
                     }
 
                     // workaround missing controls for 24 bit audio
@@ -976,6 +987,9 @@ public class JavaPlayer implements AudioPlayer {
                     }
                     int pos = 0;
                     while (pos < justRead && line.isOpen()) {
+                        if (LOG.isLoggable(Level.INFO)) {
+                            LOG.info("Wrote " + pos + "/" + justRead + " bytes");
+                        }
                         if (stopped) throw new InterruptedException("Stopping " + this);
                         final int available = line.available();
                         final int length = Math.min(available, justRead - pos);
@@ -996,9 +1010,12 @@ public class JavaPlayer implements AudioPlayer {
                                 JavaPlayer.this.setBufferSizeInSeconds(bufferSizeInSeconds);
                                 LOG.warning("Looks like we have a buffer underrun. Doubling buffer length for NEXT line to " + bufferSizeInSeconds + "s");
                             }
+                            if (LOG.isLoggable(Level.INFO)) {
+                                LOG.info("Writing to line...");
+                            }
                             final int written = line.write(buf, pos, length);
                             if (LOG.isLoggable(Level.INFO)) {
-                                LOG.info("written: " + written);
+                                LOG.info("Written: " + written + " bytes");
                             }
                             // break out of write-look for seeking
                             if (getSeekTime() != null) {
@@ -1008,6 +1025,9 @@ public class JavaPlayer implements AudioPlayer {
                             internalSetTime(getTime(), false);
                         }
                     }
+                    if (LOG.isLoggable(Level.INFO)) {
+                        LOG.info("End of write loop for " + justRead + " bytes. Wrote " + pos + " bytes");
+                    }
                 }
                 resetSeekTime();
             } catch (IOException e) {
@@ -1015,6 +1035,9 @@ public class JavaPlayer implements AudioPlayer {
                 LOG.log(Level.SEVERE, "An IOException occurred: " + e, e);
             } catch (InterruptedException e) {
                 if (LOG.isLoggable(Level.FINE)) LOG.log(Level.FINE, "Pump was stopped: " + this, e);
+            } catch (RuntimeException e) {
+                LOG.log(Level.SEVERE, "A RuntimeException occurred: " + e, e);
+                throw e;
             }
         }
 
