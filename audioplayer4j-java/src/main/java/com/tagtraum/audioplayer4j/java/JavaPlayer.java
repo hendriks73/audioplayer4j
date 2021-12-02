@@ -658,12 +658,22 @@ public class JavaPlayer implements AudioPlayer {
     private void internalSetTime(final Duration time, final boolean forceFire) {
         final Duration oldTime = this.time;
         if (this.time == null || time == null) {
+
+            if (oldTime != time) {
+                LOG.log(Level.INFO, "internalSetTime(" + time + ", force=" + forceFire + ")", new RuntimeException());
+            }
+
             this.time = time;
             this.propertyChangeSupport.firePropertyChange("time", oldTime, time);
         } else {
             // don't fire more often than once every x milliseconds (minTimeEventDifference)
             final long diff = time.minus(this.time).toMillis();
             if (forceFire || diff > minTimeEventDifference || diff < 0) {
+
+                if (!oldTime.equals(time)) {
+                    LOG.log(Level.INFO, "internalSetTime(" + time + ", force=" + forceFire + ")", new RuntimeException());
+                }
+
                 this.time = time;
                 this.propertyChangeSupport.firePropertyChange("time", oldTime, time);
             }
