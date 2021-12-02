@@ -181,8 +181,8 @@ public class TestAudioPlayer {
         final long timeCallDuration0 = (System.nanoTime() - start0) / 1000L;
         System.out.println("timeCallDuration0 = " + timeCallDuration0);
         assertNotNull(time0, "Player time must not be null, but apparently is.");
-        assertTrue(time0.compareTo(ofMillis(500 + timeCallDuration0)) >= 0, name + ": Time should be greater than/equal to 0.5s (+" + timeCallDuration0 + "micros), but isn't: " + time0);
-        assertTrue(time0.compareTo(ofMillis(1200 + timeCallDuration0)) < 0, name + ": Time should be less than 1.2s (+" + timeCallDuration0 + "micros), but isn't: " + time0);
+        assertTrue(time0.compareTo(ofMillis(500 + timeCallDuration0/1000L)) >= 0, name + ": Time should be greater than/equal to 0.5s (+" + timeCallDuration0 + "micros), but isn't: " + time0);
+        assertTrue(time0.compareTo(ofMillis(1200 + timeCallDuration0/1000L)) < 0, name + ": Time should be less than 1.2s (+" + timeCallDuration0 + "micros), but isn't: " + time0);
 
         audioPlayer.setTime(ofMillis(200));
 
@@ -195,8 +195,8 @@ public class TestAudioPlayer {
         final long timeCallDuration1 = (System.nanoTime() - start1) / 1000L;
         System.out.println("timeCallDuration1 = " + timeCallDuration1);
         assertNotNull(time1, "Player time must not be null, but apparently is.");
-        assertTrue(time1.compareTo(ofMillis(200 + timeCallDuration1)) >= 0, name + ": Time should be greater than/equal to 0.2s (+" + timeCallDuration0 + "micros), but isn't: " + time1);
-        assertTrue(time1.compareTo(ofMillis(900 + timeCallDuration1)) < 0, name + ": Time should be less than 0.9s (+" + timeCallDuration0 + "micros), but isn't: " + time1);
+        assertTrue(time1.compareTo(ofMillis(200 + timeCallDuration1/1000L)) >= 0, name + ": Time should be greater than/equal to 0.2s (+" + timeCallDuration0 + "micros), but isn't: " + time1);
+        assertTrue(time1.compareTo(ofMillis(900 + timeCallDuration1/1000L)) < 0, name + ": Time should be less than 0.9s (+" + timeCallDuration0 + "micros), but isn't: " + time1);
 
         audioPlayer.close();
     }
