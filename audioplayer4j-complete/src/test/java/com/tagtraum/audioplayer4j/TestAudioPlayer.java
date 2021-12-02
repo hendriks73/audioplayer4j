@@ -7,8 +7,6 @@
 package com.tagtraum.audioplayer4j;
 
 import com.tagtraum.audioplayer4j.java.JavaPlayer;
-import com.tagtraum.audioplayer4j.javafx.JavaFXPlayer;
-import com.tagtraum.audioplayer4j.macos.AVFoundationPlayer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -596,9 +594,9 @@ public class TestAudioPlayer {
         // always available
         players.add(arguments(named("JavaPlayer", new JavaPlayer())));
         // only with JavaFX
-        if (isJavaFXAvailable()) players.add(arguments(named("JavaFXPlayer", new JavaFXPlayer())));
+//        if (isJavaFXAvailable()) players.add(arguments(named("JavaFXPlayer", new JavaFXPlayer())));
         // only on macOS
-        if (MAC) players.add(arguments(named("AVFoundationPlayer", new AVFoundationPlayer())));
+//        if (MAC) players.add(arguments(named("AVFoundationPlayer", new AVFoundationPlayer())));
 
         return players.stream();
     }
