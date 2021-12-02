@@ -7,6 +7,7 @@
 package com.tagtraum.audioplayer4j;
 
 import com.tagtraum.audioplayer4j.java.JavaPlayer;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -66,6 +67,7 @@ public class TestAudioPlayer {
 
     @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("players")
+    @RepeatedTest(10)
     public void testTimeForFile(final AudioPlayer audioPlayer) throws IOException, InterruptedException, InvocationTargetException, UnsupportedAudioFileException {
 
         final MemoryPropertyChangeListener listener = new MemoryPropertyChangeListener();
@@ -146,6 +148,7 @@ public class TestAudioPlayer {
 
     @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("players")
+    @RepeatedTest(10)
     public void testTimeForFileWhilePlaying(final AudioPlayer audioPlayer) throws IOException, InterruptedException, InvocationTargetException, UnsupportedAudioFileException {
 
         final MemoryPropertyChangeListener listener = new MemoryPropertyChangeListener();

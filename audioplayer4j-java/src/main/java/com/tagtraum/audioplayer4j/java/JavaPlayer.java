@@ -655,7 +655,7 @@ public class JavaPlayer implements AudioPlayer {
         setSeekTime(null);
     }
 
-    private void internalSetTime(final Duration time, final boolean forceFire) {
+    private synchronized void internalSetTime(final Duration time, final boolean forceFire) {
         final Duration oldTime = this.time;
         if (this.time == null || time == null) {
 
@@ -806,7 +806,7 @@ public class JavaPlayer implements AudioPlayer {
         private final SourceDataLine line;
         private final boolean useCustomGainControl;
         private final SingleThreadedAudioInputStream stream;
-        private long lineTimeDiff;
+        private long lineTimeDiff; // TODO: Use frames instead of timestamps
         private boolean stopped;
 
         private StreamLinePump(final SingleThreadedAudioInputStream stream, final SourceDataLine line) {
@@ -916,23 +916,28 @@ public class JavaPlayer implements AudioPlayer {
                                 LOG.fine("seekTime >= streamTime: Skipping ahead");
                             }
                             final Duration timeToSkip = seekTime.minus(streamTime);
-                            int stillToSkip = (int)(timeToSkip.toMillis() * lineFormat.getSampleRate() * lineFormat.getFrameSize() / 1000L);
+                            long bytesStillToSkip;
+                            try {
+                                bytesStillToSkip = (long) (timeToSkip.toNanos() * lineFormat.getSampleRate() * lineFormat.getFrameSize() / (1000L * 1000L * 1000L));
+                            } catch (ArithmeticException e) {
+                                bytesStillToSkip = (long) (timeToSkip.toMillis() * lineFormat.getSampleRate() * lineFormat.getFrameSize() / 1000L);
+                            }
                             justRead = 0;
-                            while (stillToSkip > 0) {
+                            while (bytesStillToSkip > 0) {
                                 justRead = stream.read(buf);
                                 if (justRead < 0) {
                                     // stream end - seek time is unreachable
                                     quietClose();
                                     return;
                                 } else {
-                                    if (justRead > stillToSkip) {
+                                    if (justRead > bytesStillToSkip) {
                                         // we have already read audio we want to play
                                         // lets drop the parts we don't want to play
-                                        System.arraycopy(buf, stillToSkip, buf, 0, justRead-stillToSkip);
-                                        justRead = justRead - stillToSkip;
-                                        stillToSkip = 0;
+                                        System.arraycopy(buf, (int)bytesStillToSkip, buf, 0, justRead-(int)bytesStillToSkip);
+                                        justRead = justRead - (int)bytesStillToSkip;
+                                        bytesStillToSkip = 0;
                                     } else {
-                                        stillToSkip -= justRead;
+                                        bytesStillToSkip -= justRead;
                                     }
                                 }
                             }
@@ -942,7 +947,7 @@ public class JavaPlayer implements AudioPlayer {
                             markLineTimeDiff(seekTime);
                             resetSeekTime();
                             // force fire
-                            internalSetTime(getTime(), true);
+                            // internalSetTime(getTime(), true);
                         } else {
                             // we've already read past seekTime: we need to re-open the stream
                             if (LOG.isLoggable(Level.FINE)) {
