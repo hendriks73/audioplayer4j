@@ -102,6 +102,6 @@ jobs:
         run: |
           jackd -rd dummy &
           sleep 5
-          # xvfb-run mvn --no-transfer-progress --batch-mode --file pom.xml install
-          xvfb-run mvn --no-transfer-progress --batch-mode --file pom.xml install -Dmaven.test.skip=true
-          xvfb-run mvn --no-transfer-progress --batch-mode --file audioplayer4j-complete/pom.xml install -Dtest=TestAudioPlayer#testTimeForFile
+          # xvfb-run -a mvn --no-transfer-progress --batch-mode --file pom.xml install
+          xvfb-run -a mvn --no-transfer-progress --batch-mode --file pom.xml install -Dmaven.test.skip=true
+          xvfb-run -a mvn --no-transfer-progress --batch-mode --file audioplayer4j-complete/pom.xml install -Dtest=TestAudioPlayer#testTimeForFile
