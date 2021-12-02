@@ -151,14 +151,14 @@ public class TestAudioPlayer {
         assertFalse(events.hasNext());
     }
 
-    @RepeatedTest(10)
-    public void repeatedTestTimeForFileWhilePlaying() throws UnsupportedAudioFileException, IOException, InterruptedException, InvocationTargetException {
+    @RepeatedTest(1)
+    public void repeatedTestTimeForFileWhilePlaying() throws UnsupportedAudioFileException, IOException, InterruptedException {
         testTimeForFileWhilePlaying(new JavaPlayer());
     }
 
     @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("players")
-    public void testTimeForFileWhilePlaying(final AudioPlayer audioPlayer) throws IOException, InterruptedException, InvocationTargetException, UnsupportedAudioFileException {
+    public void testTimeForFileWhilePlaying(final AudioPlayer audioPlayer) throws IOException, InterruptedException, UnsupportedAudioFileException {
 
         final MemoryPropertyChangeListener listener = new MemoryPropertyChangeListener();
         audioPlayer.addPropertyChangeListener("time", listener);
