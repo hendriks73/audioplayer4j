@@ -141,11 +141,11 @@ public class TestAudioPlayer {
         final PropertyChangeEvent seekEvent3 = events.next();
         assertEquals("time", seekEvent3.getPropertyName());
         assertEquals(ofMillis(200), seekEvent3.getOldValue(), message);
-        assertEquals(duration, seekEvent3.getNewValue(), message);
+        assertEquals(duration.toMillis(), ((Duration)seekEvent3.getNewValue()).toMillis(), message);
 
         final PropertyChangeEvent closeEvent = events.next();
         assertEquals("time", closeEvent.getPropertyName());
-        assertEquals(duration, closeEvent.getOldValue(), message);
+        assertEquals(duration.toMillis(), ((Duration)closeEvent.getOldValue()).toMillis(), message);
         assertNull(closeEvent.getNewValue(), message);
 
         assertFalse(events.hasNext());

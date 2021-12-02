@@ -645,9 +645,13 @@ public class JavaPlayer implements AudioPlayer {
     }
 
     private synchronized void setSeekTime(final Duration seekTime) {
+        final Duration oldSeekTime = this.seekTime;
         this.seekTime = seekTime;
-        if (seekTime != null) {
-            internalSetTime(seekTime, true);
+        if (seekTime != null && !seekTime.equals(oldSeekTime) && line.isOpen()) {
+            if (LOG.isLoggable(Level.FINE)) {
+                LOG.fine("line.flush()");
+            }
+            line.flush();
         }
     }
 
@@ -918,9 +922,9 @@ public class JavaPlayer implements AudioPlayer {
                             final Duration timeToSkip = seekTime.minus(streamTime);
                             long bytesStillToSkip;
                             try {
-                                bytesStillToSkip = (long) (timeToSkip.toNanos() * lineFormat.getSampleRate() * lineFormat.getFrameSize() / (1000L * 1000L * 1000L));
+                                bytesStillToSkip = ((long) (timeToSkip.toNanos() * lineFormat.getSampleRate() / (1000L * 1000L * 1000L))) * lineFormat.getFrameSize();
                             } catch (ArithmeticException e) {
-                                bytesStillToSkip = (long) (timeToSkip.toMillis() * lineFormat.getSampleRate() * lineFormat.getFrameSize() / 1000L);
+                                bytesStillToSkip = ((long) (timeToSkip.toMillis() * lineFormat.getSampleRate() / 1000L)) * lineFormat.getFrameSize();
                             }
                             justRead = 0;
                             while (bytesStillToSkip > 0) {
@@ -947,7 +951,7 @@ public class JavaPlayer implements AudioPlayer {
                             markLineTimeDiff(seekTime);
                             resetSeekTime();
                             // force fire
-                            // internalSetTime(getTime(), true);
+                            internalSetTime(getTime(), true);
                         } else {
                             // we've already read past seekTime: we need to re-open the stream
                             if (LOG.isLoggable(Level.FINE)) {
@@ -996,11 +1000,8 @@ public class JavaPlayer implements AudioPlayer {
                             if (LOG.isLoggable(Level.FINE)) {
                                 LOG.fine("written: " + written);
                             }
+                            // break out of write-look for seeking
                             if (getSeekTime() != null) {
-                                if (LOG.isLoggable(Level.FINE)) {
-                                    LOG.fine("line.flush()");
-                                }
-                                line.flush();
                                 break;
                             }
                             pos += written;
