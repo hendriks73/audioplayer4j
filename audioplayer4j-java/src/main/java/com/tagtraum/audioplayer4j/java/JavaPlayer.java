@@ -847,10 +847,10 @@ public class JavaPlayer implements AudioPlayer {
             }
             else if (line.isOpen()) {
                 time = of(line.getMicrosecondPosition() - lineTimeDiff, MICROS);
-                if (LOG.isLoggable(Level.FINEST)) {
-                    LOG.finest("getTime(), using line time: " + time);
-                    LOG.finest("line.getMicrosecondPosition(): " + line.getMicrosecondPosition());
-                    LOG.finest("lineTimeDiff: " + lineTimeDiff);
+                if (LOG.isLoggable(Level.INFO)) {
+                    LOG.info("getTime(), using line time: " + time);
+                    LOG.info("line.getMicrosecondPosition(): " + line.getMicrosecondPosition());
+                    LOG.info("lineTimeDiff: " + lineTimeDiff);
                 }
             }
             else {
@@ -871,7 +871,7 @@ public class JavaPlayer implements AudioPlayer {
         public void run() {
             markLineTimeDiff(getStreamTime());
             final AudioFormat lineFormat = line.getFormat();
-            final int bytesPerSecond = lineFormat.getFrameSize() * (int)lineFormat.getFrameRate();
+            final int bytesPerSecond = lineFormat.getFrameSize() * (int)lineFormat.getSampleRate();
             if (LOG.isLoggable(Level.FINE)) {
                 LOG.fine("Line data rate in bytes/s: " + bytesPerSecond);
                 LOG.fine("Required buffer size for 10s: " + (bytesPerSecond*10));
@@ -992,7 +992,7 @@ public class JavaPlayer implements AudioPlayer {
                             if (available == bufferSize && pos != 0) {
                                 final AudioFormat format = line.getFormat();
                                 // increase to at most 1s
-                                final float bufferSizeInSeconds = Math.min(1f, bufferSize * 2f / (format.getFrameSize() * format.getFrameRate()));
+                                final float bufferSizeInSeconds = Math.min(1f, bufferSize * 2f / (format.getFrameSize() * format.getSampleRate()));
                                 JavaPlayer.this.setBufferSizeInSeconds(bufferSizeInSeconds);
                                 LOG.warning("Looks like we have a buffer underrun. Doubling buffer length for NEXT line to " + bufferSizeInSeconds + "s");
                             }
@@ -1069,6 +1069,9 @@ public class JavaPlayer implements AudioPlayer {
 
         private synchronized void markLineTimeDiff(final Duration time) {
             lineTimeDiff = line.getMicrosecondPosition() - time.dividedBy(MICROS.getDuration());
+            if (LOG.isLoggable(Level.INFO)) {
+                LOG.info("New line time diff: " + lineTimeDiff + " micros");
+            }
         }
     }
 
