@@ -985,52 +985,7 @@ public class JavaPlayer implements AudioPlayer {
                     if (useCustomGainControl) {
                         adjustVolume(buf);
                     }
-                    int pos = 0;
-                    while (pos < justRead && line.isOpen()) {
-                        if (LOG.isLoggable(Level.INFO)) {
-                            LOG.info("Wrote " + pos + "/" + justRead + " bytes");
-                        }
-                        if (stopped) throw new InterruptedException("Stopping " + this);
-                        final int available = line.available();
-                        final int length = Math.min(available, justRead - pos);
-                        if (length == 0) {
-                            if (LOG.isLoggable(Level.INFO)) {
-                                LOG.info("length=" + length + ", available=" + available + ", stillToWrite=" + (justRead - pos) + ", line.isActive()=" + line.isActive() + ", line.isRunning()=" + line.isRunning());
-                            }
-                            synchronized (this) {
-                                try {
-                                    this.wait(50);
-                                } catch (InterruptedException e) {
-                                    LOG.log(Level.FINE, e.toString(), e);
-                                }
-                            }
-                        } else {
-                            final int bufferSize = line.getBufferSize();
-                            if (available == bufferSize && pos != 0) {
-                                final AudioFormat format = line.getFormat();
-                                // increase to at most 1s
-                                final float bufferSizeInSeconds = Math.min(1f, bufferSize * 2f / (format.getFrameSize() * format.getSampleRate()));
-                                JavaPlayer.this.setBufferSizeInSeconds(bufferSizeInSeconds);
-                                LOG.warning("Looks like we have a buffer underrun. Doubling buffer length for NEXT line to " + bufferSizeInSeconds + "s");
-                            }
-                            if (LOG.isLoggable(Level.INFO)) {
-                                LOG.info("Writing to line...");
-                            }
-                            final int written = line.write(buf, pos, length);
-                            if (LOG.isLoggable(Level.INFO)) {
-                                LOG.info("Written: " + written + " bytes");
-                            }
-                            // break out of write-look for seeking
-                            if (getSeekTime() != null) {
-                                break;
-                            }
-                            pos += written;
-                            internalSetTime(getTime(), false);
-                        }
-                    }
-                    if (LOG.isLoggable(Level.INFO)) {
-                        LOG.info("End of write loop for " + justRead + " bytes. Wrote " + pos + " bytes");
-                    }
+                    writeToLine(line, buf, justRead);
                 }
                 resetSeekTime();
             } catch (IOException e) {
@@ -1041,6 +996,63 @@ public class JavaPlayer implements AudioPlayer {
             } catch (RuntimeException e) {
                 LOG.log(Level.SEVERE, "A RuntimeException occurred: " + e, e);
                 throw e;
+            }
+        }
+
+        /**
+         * Write data from buffer to line (to play).
+         *
+         * @param line line
+         * @param buf audio data buffer
+         * @param length data length
+         * @throws InterruptedException if the pump is stopped
+         */
+        private void writeToLine(final SourceDataLine line, final byte[] buf, final int length) throws InterruptedException {
+            final AudioFormat lineFormat = line.getFormat();
+            int pos = 0;
+            while (pos < length && line.isOpen()) {
+                if (LOG.isLoggable(Level.INFO)) {
+                    LOG.info("Wrote " + pos + "/" + length + " bytes");
+                }
+                if (stopped) throw new InterruptedException("Stopping " + this);
+                final int available = line.available();
+                final int bufferSize = line.getBufferSize();
+                final int chunkLength;
+
+                // determine how many bytes we actually want to write in one go
+                if (available == 0) {
+                    LOG.warning("Probably cannot write to line without blocking, available == 0. Trying to write 0.1 second worth of data.");
+                    final int tenthSecondInBytes = (int)(lineFormat.getSampleRate() / 10f) * lineFormat.getFrameSize();
+                    chunkLength = Math.min(tenthSecondInBytes, length - pos);
+                } else {
+                    chunkLength = Math.min(available, length - pos);
+                }
+
+                // adjust buffer
+                if (available == bufferSize && pos != 0) {
+                    final AudioFormat format = line.getFormat();
+                    // increase to at most 1s
+                    final float bufferSizeInSeconds = Math.min(1f, bufferSize * 2f / (format.getFrameSize() * format.getSampleRate()));
+                    JavaPlayer.this.setBufferSizeInSeconds(bufferSizeInSeconds);
+                    LOG.warning("Looks like we have a buffer underrun. Doubling buffer length for NEXT line to " + bufferSizeInSeconds + "s");
+                }
+
+                if (LOG.isLoggable(Level.INFO)) {
+                    LOG.info("Writing to line...");
+                }
+                final int written = line.write(buf, pos, chunkLength);
+                pos += written;
+                if (LOG.isLoggable(Level.INFO)) {
+                    LOG.info("Written: " + written + " bytes");
+                }
+                // break out of write-loop for seeking
+                if (getSeekTime() != null) {
+                    break;
+                }
+                internalSetTime(getTime(), false);
+            }
+            if (LOG.isLoggable(Level.INFO)) {
+                LOG.info("End of write loop for " + length + " bytes. Wrote " + pos + " bytes");
             }
         }
 
