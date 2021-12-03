@@ -651,7 +651,7 @@ public class JavaPlayer implements AudioPlayer {
             if (LOG.isLoggable(Level.FINE)) {
                 LOG.fine("line.flush()");
             }
-            line.flush();
+            // line.flush();
         }
     }
 
