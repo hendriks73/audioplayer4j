@@ -148,7 +148,7 @@ public class TestAudioPlayer {
         assertEquals(duration.toMillis(), ((Duration)closeEvent.getOldValue()).toMillis(), message);
         assertNull(closeEvent.getNewValue(), message);
 
-        assertFalse(events.hasNext());
+        assertFalse(events.hasNext(), "Unexpected event: " + events.next() + ", all events: " + listener.getEvents());
     }
 
     @RepeatedTest(1)
@@ -232,7 +232,7 @@ public class TestAudioPlayer {
         assertEquals(uri, closeEvent.getOldValue());
         assertNull(closeEvent.getNewValue());
 
-        assertFalse(events.hasNext());
+        assertFalse(events.hasNext(), "Unexpected event: " + events.next() + ", all events: " + listener.getEvents());
     }
 
 
@@ -271,7 +271,7 @@ public class TestAudioPlayer {
         assertEquals(reportedDuration, closeEvent.getOldValue());
         assertNull(closeEvent.getNewValue());
 
-        assertFalse(events.hasNext());
+        assertFalse(events.hasNext(), "Unexpected event: " + events.next() + ", all events: " + listener.getEvents());
     }
 
     @ParameterizedTest(name = "{index}: {0}")
