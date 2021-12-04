@@ -346,6 +346,7 @@ public class JavaPlayer implements AudioPlayer {
         final SourceDataLine line = (SourceDataLine)audioDevice.getLine(lineInfo);
         final int bufferSize = desiredFormat.getFrameSize() *  (int)(desiredFormat.getFrameRate() * this.bufferSizeInSeconds);
         try {
+            line.addLineListener(event -> LOG.info("Line: " + event));
             line.open(desiredFormat, bufferSize);
         } catch (LineUnavailableException e) {
             LOG.log(Level.SEVERE, "Failed to open line with format " + desiredFormat +  " and buffer " + bufferSize + " on mixer " + audioDevice, e);
@@ -1039,7 +1040,7 @@ public class JavaPlayer implements AudioPlayer {
                 }
 
                 if (LOG.isLoggable(Level.INFO)) {
-                    LOG.info("Attempt at writing " + chunkLength + " bytes to line...");
+                    LOG.info("Attempt at writing " + chunkLength + " bytes to line... (line.isActive=" + line.isActive() + ", line.isRunning=" + line.isRunning() + ")");
                 }
                 final int written = line.write(buf, pos, chunkLength);
                 pos += written;
