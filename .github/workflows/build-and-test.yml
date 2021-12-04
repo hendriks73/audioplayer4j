@@ -86,10 +86,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Jackd (Virtual Audio Device)
+      - name: Install Audio
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y alsa-base alsa-utils jackd2 pulseaudio-module-jack
+          sudo apt-get install -y pulseaudio jackd2 alsa-utils dbus-x11
 
       - name: Set up Java
         uses: actions/setup-java@v2
@@ -101,8 +101,8 @@ jobs:
 
       - name: Build/test code with Maven
         run: |
-          jackd -rd dummy &
-          sleep 5
+          # jackd -rd dummy &
+          # sleep 5
           # xvfb-run -a mvn --no-transfer-progress --batch-mode --file pom.xml install
           xvfb-run -a mvn --no-transfer-progress --batch-mode --file pom.xml install -Dmaven.test.skip=true
           xvfb-run -a mvn --no-transfer-progress --batch-mode --file audioplayer4j-complete/pom.xml install -Dtest=TestAudioPlayer#repeatedTestTimeForFileWhilePlaying
