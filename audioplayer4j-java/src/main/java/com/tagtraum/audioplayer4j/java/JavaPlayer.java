@@ -845,7 +845,7 @@ public class JavaPlayer implements AudioPlayer {
                     LOG.finest("getTime(), using seekTime: " + time);
                 }
             }
-            else if (line.isOpen()) {
+            else if (line != null && line.isOpen()) {
                 time = of(line.getMicrosecondPosition() - lineTimeDiff, MICROS);
                 if (LOG.isLoggable(Level.INFO)) {
                     LOG.info("getTime(), using line time: " + time);
@@ -864,7 +864,8 @@ public class JavaPlayer implements AudioPlayer {
         }
 
         private Duration getStreamTime() {
-            return of((long) (stream.getFrameNumber() / audioFormat.getSampleRate() * 1000000), MICROS);
+            if (stream == null || audioFormat == null) return null;
+            else return of((long) (stream.getFrameNumber() / audioFormat.getSampleRate() * 1000000), MICROS);
         }
 
         @Override
@@ -1038,7 +1039,7 @@ public class JavaPlayer implements AudioPlayer {
                 }
 
                 if (LOG.isLoggable(Level.INFO)) {
-                    LOG.info("Writing to line...");
+                    LOG.info("Attempt at writing " + chunkLength + " bytes to line...");
                 }
                 final int written = line.write(buf, pos, chunkLength);
                 pos += written;
