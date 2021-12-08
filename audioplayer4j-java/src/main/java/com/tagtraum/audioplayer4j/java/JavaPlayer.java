@@ -841,30 +841,30 @@ public class JavaPlayer implements AudioPlayer {
         }
 
         public Duration getTime() {
-            final Duration time;
-            final Duration seekTime = getSeekTime();
-            if (seekTime != null) {
-                time = seekTime;
-                if (LOG.isLoggable(Level.FINEST)) {
-                    LOG.finest("getTime(), using seekTime: " + time);
+            synchronized (JavaPlayer.this) {
+                final Duration time;
+                final Duration seekTime = getSeekTime();
+                if (seekTime != null) {
+                    time = seekTime;
+                    if (LOG.isLoggable(Level.FINEST)) {
+                        LOG.finest("getTime(), using seekTime: " + time);
+                    }
+                } else if (line != null && line.isOpen()) {
+                    time = of(line.getMicrosecondPosition() - lineTimeDiff, MICROS);
+                    if (LOG.isLoggable(Level.INFO)) {
+                        LOG.info("getTime(), using line time: " + time);
+                        LOG.info("line.getMicrosecondPosition(): " + line.getMicrosecondPosition());
+                        LOG.info("lineTimeDiff: " + lineTimeDiff);
+                    }
+                } else {
+                    time = getStreamTime();
+                    if (LOG.isLoggable(Level.FINEST)) {
+                        LOG.finest("getTime(), using getStreamTime(): " + time);
+                    }
                 }
+                LOG.info("time=" + time + ", seekTime=" + seekTime + ", line.isOpen=" + (line != null && line.isOpen()) + ", streamTime=" + getStreamTime());
+                return time;
             }
-            else if (line != null && line.isOpen()) {
-                time = of(line.getMicrosecondPosition() - lineTimeDiff, MICROS);
-                if (LOG.isLoggable(Level.INFO)) {
-                    LOG.info("getTime(), using line time: " + time);
-                    LOG.info("line.getMicrosecondPosition(): " + line.getMicrosecondPosition());
-                    LOG.info("lineTimeDiff: " + lineTimeDiff);
-                }
-            }
-            else {
-                time = getStreamTime();
-                if (LOG.isLoggable(Level.FINEST)) {
-                    LOG.finest("getTime(), using getStreamTime(): " + time);
-                }
-            }
-            LOG.info("time=" + time + ", seekTime=" + seekTime + ", line.isOpen=" + (line != null && line.isOpen()) + ", streamTime=" + getStreamTime());
-            return time;
         }
 
         private Duration getStreamTime() {
@@ -1012,8 +1012,8 @@ public class JavaPlayer implements AudioPlayer {
         }
 
         private void reachedSeekTime(final Duration seekTime) {
-            if (LOG.isLoggable(Level.FINE)) {
-                LOG.fine("Reached seekTime");
+            if (LOG.isLoggable(Level.INFO)) {
+                LOG.info("Reached seekTime " + seekTime);
             }
             markLineTimeDiff(seekTime);
             resetSeekTime();
@@ -1138,10 +1138,12 @@ public class JavaPlayer implements AudioPlayer {
             }
         }
 
-        private synchronized void markLineTimeDiff(final Duration time) {
-            lineTimeDiff = line.getMicrosecondPosition() - time.dividedBy(MICROS.getDuration());
-            if (LOG.isLoggable(Level.INFO)) {
-                LOG.info("New line time diff: " + lineTimeDiff + " micros");
+        private void markLineTimeDiff(final Duration time) {
+            synchronized (JavaPlayer.this) {
+                lineTimeDiff = line.getMicrosecondPosition() - time.dividedBy(MICROS.getDuration());
+                if (LOG.isLoggable(Level.INFO)) {
+                    LOG.info("New line time diff: " + lineTimeDiff + " micros");
+                }
             }
         }
     }
