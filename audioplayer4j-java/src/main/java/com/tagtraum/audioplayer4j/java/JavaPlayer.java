@@ -183,7 +183,7 @@ public class JavaPlayer implements AudioPlayer {
                 throw new IllegalArgumentException("Failed to open line on new audio device: " + audioDevice, e);
             }
         }
-        propertyChangeSupport.firePropertyChange("audioDevice", oldAudioDevice, audioDevice);
+        firePropertyChange("audioDevice", oldAudioDevice, audioDevice);
     }
 
     @Override
@@ -259,8 +259,8 @@ public class JavaPlayer implements AudioPlayer {
             }
             throw new IOException(e);
         } finally {
-            propertyChangeSupport.firePropertyChange("uri", oldSong, this.song);
-            propertyChangeSupport.firePropertyChange("duration", oldDuration, this.duration);
+            firePropertyChange("uri", oldSong, this.song);
+            firePropertyChange("duration", oldDuration, this.duration);
             propertyChangeSupport.firePropertyChange("paused", oldPaused, this.paused);
         }
     }
@@ -433,18 +433,14 @@ public class JavaPlayer implements AudioPlayer {
 
     @Override
     public void close() {
-        if (stream == null && line == null) {
-            // player is not open, nothing to close
-            return;
-        }
         final URI oldSong = song;
         final Duration oldDuration = duration;
         final boolean oldPaused = paused;
         quietClose();
         internalSetTime(null, false);
         this.paused = true;
-        propertyChangeSupport.firePropertyChange("uri", oldSong, this.song);
-        propertyChangeSupport.firePropertyChange("duration", oldDuration, this.duration);
+        firePropertyChange("uri", oldSong, this.song);
+        firePropertyChange("duration", oldDuration, this.duration);
         propertyChangeSupport.firePropertyChange("paused", oldPaused, this.paused);
     }
 
@@ -669,7 +665,7 @@ public class JavaPlayer implements AudioPlayer {
             }
 
             this.time = time;
-            this.propertyChangeSupport.firePropertyChange("time", oldTime, time);
+            firePropertyChange("time", oldTime, time);
         } else {
             // don't fire more often than once every x milliseconds (minTimeEventDifference)
             final long diff = time.minus(this.time).toMillis();
@@ -680,7 +676,7 @@ public class JavaPlayer implements AudioPlayer {
                 }
 
                 this.time = time;
-                this.propertyChangeSupport.firePropertyChange("time", oldTime, time);
+                firePropertyChange("time", oldTime, time);
             }
         }
     }
@@ -706,6 +702,13 @@ public class JavaPlayer implements AudioPlayer {
                     listener.finished(JavaPlayer.this, s);
                 }
             });
+        }
+    }
+
+    private void firePropertyChange(String propertyName, Object oldValue, Object newValue) {
+        // do not fire, if both are null
+        if (oldValue != null || newValue != null) {
+            propertyChangeSupport.firePropertyChange(propertyName, oldValue, newValue);
         }
     }
 
@@ -869,6 +872,14 @@ public class JavaPlayer implements AudioPlayer {
             else return of((long) (stream.getFrameNumber() / audioFormat.getSampleRate() * 1000000), MICROS);
         }
 
+        private Duration getBufferTime(final int diffToStreamInBytes) {
+            if (stream == null || audioFormat == null) return null;
+            else {
+                final int diffToStreamInFrames = diffToStreamInBytes / audioFormat.getFrameSize();
+                return of((long) ((stream.getFrameNumber()-diffToStreamInFrames) / audioFormat.getSampleRate() * 1000000), MICROS);
+            }
+        }
+
         @Override
         public void run() {
             markLineTimeDiff(getStreamTime());
@@ -879,7 +890,7 @@ public class JavaPlayer implements AudioPlayer {
                 LOG.fine("Required buffer size for 10s: " + (bytesPerSecond*10));
             }
             final byte[] buf = new byte[10 * bytesPerSecond];
-            int justRead;
+            int justRead = 0;
             try {
                 while (line.isOpen()) {
                     if (stopped) throw new InterruptedException("Stopping " + this);
@@ -927,18 +938,23 @@ public class JavaPlayer implements AudioPlayer {
                         }
                         // we are in seek mode
 
-                        if (seekTime.compareTo(streamTime) >= 0) {
+                        final Duration bufferTime = getBufferTime(justRead);
+                        if (justRead > 0 && bufferTime != null && seekTime.compareTo(bufferTime) >= 0) {
+                            if (LOG.isLoggable(Level.INFO)) {
+                                LOG.info("seekTime >= buffer(Start)Time: Skipping ahead in buffer");
+                            }
+                            final int bytesToSkip = (int)getBytesToSkip(lineFormat, seekTime, bufferTime);
+                            // we have already read audio we want to play
+                            // lets drop the parts we don't want to play
+                            System.arraycopy(buf, bytesToSkip, buf, 0, justRead- bytesToSkip);
+                            justRead = justRead - bytesToSkip;
+                            reachedSeekTime(seekTime);
+                        } else if (seekTime.compareTo(streamTime) >= 0) {
                             // keep on reading, until we reach seekTime
                             if (LOG.isLoggable(Level.INFO)) {
-                                LOG.info("seekTime >= streamTime: Skipping ahead");
+                                LOG.info("seekTime >= streamTime: Skipping ahead in stream");
                             }
-                            final Duration timeToSkip = seekTime.minus(streamTime);
-                            long bytesStillToSkip;
-                            try {
-                                bytesStillToSkip = ((long) (timeToSkip.toNanos() * lineFormat.getSampleRate() / (1000L * 1000L * 1000L))) * lineFormat.getFrameSize();
-                            } catch (ArithmeticException e) {
-                                bytesStillToSkip = ((long) (timeToSkip.toMillis() * lineFormat.getSampleRate() / 1000L)) * lineFormat.getFrameSize();
-                            }
+                            long bytesStillToSkip = getBytesToSkip(lineFormat, seekTime, streamTime);
                             justRead = 0;
                             while (bytesStillToSkip > 0) {
                                 justRead = stream.read(buf);
@@ -958,13 +974,7 @@ public class JavaPlayer implements AudioPlayer {
                                     }
                                 }
                             }
-                            if (LOG.isLoggable(Level.FINE)) {
-                                LOG.fine("Reached seekTime");
-                            }
-                            markLineTimeDiff(seekTime);
-                            resetSeekTime();
-                            // force fire
-                            internalSetTime(getTime(), true);
+                            reachedSeekTime(seekTime);
                         } else {
                             // we've already read past seekTime: we need to re-open the stream
                             if (LOG.isLoggable(Level.FINE)) {
@@ -999,6 +1009,27 @@ public class JavaPlayer implements AudioPlayer {
                 LOG.log(Level.SEVERE, "A RuntimeException occurred: " + e, e);
                 throw e;
             }
+        }
+
+        private void reachedSeekTime(final Duration seekTime) {
+            if (LOG.isLoggable(Level.FINE)) {
+                LOG.fine("Reached seekTime");
+            }
+            markLineTimeDiff(seekTime);
+            resetSeekTime();
+            // force fire
+            internalSetTime(getTime(), true);
+        }
+
+        private long getBytesToSkip(final AudioFormat lineFormat, final Duration seekTime, final Duration currentTime) {
+            final Duration timeToSkip = seekTime.minus(currentTime);
+            long bytesStillToSkip;
+            try {
+                bytesStillToSkip = ((long) (timeToSkip.toNanos() * lineFormat.getSampleRate() / (1000L * 1000L * 1000L))) * lineFormat.getFrameSize();
+            } catch (ArithmeticException e) {
+                bytesStillToSkip = ((long) (timeToSkip.toMillis() * lineFormat.getSampleRate() / 1000L)) * lineFormat.getFrameSize();
+            }
+            return bytesStillToSkip;
         }
 
         /**
