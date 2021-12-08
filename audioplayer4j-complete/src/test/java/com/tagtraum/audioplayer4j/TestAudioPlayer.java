@@ -10,6 +10,7 @@ import com.tagtraum.audioplayer4j.java.JavaPlayer;
 import com.tagtraum.audioplayer4j.javafx.JavaFXPlayer;
 import com.tagtraum.audioplayer4j.macos.AVFoundationPlayer;
 import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -148,7 +149,8 @@ public class TestAudioPlayer {
         assertEquals(duration.toMillis(), ((Duration)closeEvent.getOldValue()).toMillis(), message);
         assertNull(closeEvent.getNewValue(), message);
 
-        assertFalse(events.hasNext(), "Unexpected event: " + events.next() + ", all events: " + listener.getEvents());
+        if (events.hasNext())
+            assertFalse(events.hasNext(), "Unexpected event: " + events.next() + ", all events: " + listener.getEvents());
     }
 
     @RepeatedTest(1)
@@ -232,7 +234,8 @@ public class TestAudioPlayer {
         assertEquals(uri, closeEvent.getOldValue());
         assertNull(closeEvent.getNewValue());
 
-        assertFalse(events.hasNext(), "Unexpected event: " + events.next() + ", all events: " + listener.getEvents());
+        if (events.hasNext())
+            assertFalse(events.hasNext(), "Unexpected event: " + events.next() + ", all events: " + listener.getEvents());
     }
 
 
@@ -271,7 +274,8 @@ public class TestAudioPlayer {
         assertEquals(reportedDuration, closeEvent.getOldValue());
         assertNull(closeEvent.getNewValue());
 
-        assertFalse(events.hasNext(), "Unexpected event: " + events.next() + ", all events: " + listener.getEvents());
+        if (events.hasNext())
+            assertFalse(events.hasNext(), "Unexpected event: " + events.next() + ", all events: " + listener.getEvents());
     }
 
     @ParameterizedTest(name = "{index}: {0}")
