@@ -372,6 +372,8 @@ public class JavaPlayer implements AudioPlayer {
             if (LineEvent.Type.START.equals(event.getType())) {
                 // fire started when the playback actually starts
                 fireStarted();
+            } else if (LineEvent.Type.CLOSE.equals(event.getType())) {
+                fireFinished();
             }
         });
 
@@ -454,7 +456,7 @@ public class JavaPlayer implements AudioPlayer {
      */
     private void quietClose() {
         if (LOG.isLoggable(Level.FINE)) LOG.fine("quietClose()");
-        fireFinished();
+        //fireFinished();
         if (this.streamCleanable != null) {
             this.streamCleanable.clean();
             this.streamCleanable = null;
