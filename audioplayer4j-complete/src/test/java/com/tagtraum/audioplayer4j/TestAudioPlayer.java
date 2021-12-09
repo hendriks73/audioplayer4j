@@ -6,17 +6,17 @@
  */
 package com.tagtraum.audioplayer4j;
 
-import com.tagtraum.audioplayer4j.device.DefaultAudioDevice;
 import com.tagtraum.audioplayer4j.java.JavaPlayer;
 import com.tagtraum.audioplayer4j.javafx.JavaFXPlayer;
 import com.tagtraum.audioplayer4j.macos.AVFoundationPlayer;
 import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.sound.sampled.*;
+import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.*;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -32,6 +32,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.stream.Stream;
 
 import static java.time.Duration.ZERO;
@@ -65,26 +66,6 @@ public class TestAudioPlayer {
             // ignore
         }
         testOpenAudioPlayer(audioPlayer.getURI(), audioPlayer);
-    }
-
-    @Test
-    public void lineFlushTest() throws LineUnavailableException {
-        final AudioFormat desiredFormat = new AudioFormat(44100f, 16, 1, true, true);
-        final AudioDevice audioDevice = DefaultAudioDevice.getInstance();
-        final DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, desiredFormat);
-        final SourceDataLine line = (SourceDataLine)audioDevice.getLine(lineInfo);
-        line.open(desiredFormat);
-        line.start();
-        final byte[] buf = new byte[2 * 44100 * 3];
-        final int written = line.write(buf, 0, buf.length);
-        System.out.println("written = " + written);
-        final long msPositionBeforeFlush = line.getMicrosecondPosition();
-        System.out.println("msPositionBeforeFlush = " + msPositionBeforeFlush);
-        line.flush();
-        final long msPositionAfterFlush = line.getMicrosecondPosition();
-        System.out.println("msPositionAfterFlush = " + msPositionAfterFlush);
-        line.stop();
-        line.close();
     }
 
     @RepeatedTest(10)
@@ -184,11 +165,26 @@ public class TestAudioPlayer {
         final MemoryPropertyChangeListener listener = new MemoryPropertyChangeListener();
         audioPlayer.addPropertyChangeListener("time", listener);
 
-        final Path file = extractFile("test.wav");
+        final CountDownLatch started = new CountDownLatch(1);
+        audioPlayer.addAudioPlayerListener(new AudioPlayerListener() {
+            @Override
+            public void started(final AudioPlayer audioPlayer, final URI uri) {
+                started.countDown();
+            }
 
+            @Override
+            public void finished(final AudioPlayer audioPlayer, final URI uri) {
+
+            }
+        });
+
+        final Path file = extractFile("test.wav");
         audioPlayer.open(file.toUri());
         assertEquals(ZERO, audioPlayer.getTime());
         audioPlayer.play();
+
+        // wait until really, really started.
+        started.await();
 
         // give it a second, some players need some time to open the file/start playback
         Thread.sleep(500);
