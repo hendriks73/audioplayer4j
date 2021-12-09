@@ -527,13 +527,13 @@ public class TestAudioPlayer {
     @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("players")
     public void testStarted(final AudioPlayer audioPlayer) throws IOException, InterruptedException, UnsupportedAudioFileException {
-
         final MemoryAudioPlayerListener listener = new MemoryAudioPlayerListener();
         audioPlayer.addAudioPlayerListener(listener);
 
         final URI uri = extractFile("test.wav").toUri();
         audioPlayer.open(uri);
         audioPlayer.play();
+        Thread.sleep(2000);
         audioPlayer.play();
         audioPlayer.playPause();
         audioPlayer.play();
@@ -542,7 +542,7 @@ public class TestAudioPlayer {
         Thread.sleep(200);
         audioPlayer.close();
 
-        Thread.sleep(200);
+        Thread.sleep(2000);
 
         final Iterator<String> iterator = listener.getEvents().iterator();
 
