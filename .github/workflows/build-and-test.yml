@@ -36,7 +36,7 @@ jobs:
         run: |
           mvn --no-transfer-progress --batch-mode --file pom.xml install
           # mvn --no-transfer-progress --batch-mode --file pom.xml install -Dmaven.test.skip=true
-          # mvn --no-transfer-progress --batch-mode --file audioplayer4j-complete/pom.xml install -Dtest=TestAudioPlayer#repeatedTestTimeForFile
+          # mvn --no-transfer-progress --batch-mode --file audioplayer4j-complete/pom.xml install -Dtest=TestAudioPlayer#repeatedTestTimeForFile,TestAudioPlayer#lineFlushTest
 
       - name: Upload CodeCov Report
         uses: codecov/codecov-action@v2
@@ -105,4 +105,4 @@ jobs:
           # sleep 5
           # xvfb-run -a mvn --no-transfer-progress --batch-mode --file pom.xml install
           xvfb-run -a mvn --no-transfer-progress --batch-mode --file pom.xml install -Dmaven.test.skip=true
-          xvfb-run -a mvn --no-transfer-progress --batch-mode --file audioplayer4j-complete/pom.xml install -Dtest=TestAudioPlayer#repeatedTestTimeForFileWhilePlaying
+          xvfb-run -a mvn --no-transfer-progress --batch-mode --file audioplayer4j-complete/pom.xml install -Dtest=TestAudioPlayer#repeatedTestTimeForFileWhilePlaying,TestAudioPlayer#lineFlushTest

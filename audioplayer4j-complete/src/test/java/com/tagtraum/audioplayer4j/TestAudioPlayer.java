@@ -6,17 +6,17 @@
  */
 package com.tagtraum.audioplayer4j;
 
+import com.tagtraum.audioplayer4j.device.DefaultAudioDevice;
 import com.tagtraum.audioplayer4j.java.JavaPlayer;
 import com.tagtraum.audioplayer4j.javafx.JavaFXPlayer;
 import com.tagtraum.audioplayer4j.macos.AVFoundationPlayer;
 import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.sound.sampled.AudioFileFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.UnsupportedAudioFileException;
+import javax.sound.sampled.*;
 import javax.swing.*;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -65,6 +65,26 @@ public class TestAudioPlayer {
             // ignore
         }
         testOpenAudioPlayer(audioPlayer.getURI(), audioPlayer);
+    }
+
+    @Test
+    public void lineFlushTest() throws LineUnavailableException {
+        final AudioFormat desiredFormat = new AudioFormat(44100f, 16, 1, true, true);
+        final AudioDevice audioDevice = DefaultAudioDevice.getInstance();
+        final DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, desiredFormat);
+        final SourceDataLine line = (SourceDataLine)audioDevice.getLine(lineInfo);
+        line.open(desiredFormat);
+        line.start();
+        final byte[] buf = new byte[2 * 44100 * 3];
+        final int written = line.write(buf, 0, buf.length);
+        System.out.println("written = " + written);
+        final long msPositionBeforeFlush = line.getMicrosecondPosition();
+        System.out.println("msPositionBeforeFlush = " + msPositionBeforeFlush);
+        line.flush();
+        final long msPositionAfterFlush = line.getMicrosecondPosition();
+        System.out.println("msPositionAfterFlush = " + msPositionAfterFlush);
+        line.stop();
+        line.close();
     }
 
     @RepeatedTest(10)
