@@ -368,6 +368,12 @@ public class JavaPlayer implements AudioPlayer {
             this.lineCleanable = instanceCleaner.register(this, new Destroyer(line));
         }
         this.line = line;
+        this.line.addLineListener(event -> {
+            if (LineEvent.Type.START.equals(event.getType())) {
+                // fire started when the playback actually starts
+                fireStarted();
+            }
+        });
 
         if (!line.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
             LOG.warning("Master gain control not supported by line " + line + " for " + desiredFormat);
@@ -414,7 +420,6 @@ public class JavaPlayer implements AudioPlayer {
         this.paused = false;
         if (LOG.isLoggable(Level.FINE)) LOG.fine("play(): line.start()");
         line.start();
-        fireStarted();
         this.propertyChangeSupport.firePropertyChange("paused", oldPaused, this.paused);
     }
 
