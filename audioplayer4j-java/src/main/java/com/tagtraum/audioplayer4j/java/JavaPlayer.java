@@ -645,8 +645,8 @@ public class JavaPlayer implements AudioPlayer {
         final Duration oldSeekTime = this.seekTime;
         this.seekTime = seekTime;
         if (seekTime != null && !seekTime.equals(oldSeekTime) && line.isOpen()) {
-            if (LOG.isLoggable(Level.FINE)) {
-                LOG.fine("line.flush()");
+            if (LOG.isLoggable(Level.INFO)) {
+                LOG.info("New seekTime=" + seekTime + " - line.flush()");
             }
             line.flush();
         }
