@@ -10,7 +10,6 @@ import com.tagtraum.audioplayer4j.java.JavaPlayer;
 import com.tagtraum.audioplayer4j.javafx.JavaFXPlayer;
 import com.tagtraum.audioplayer4j.macos.AVFoundationPlayer;
 import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -171,20 +170,23 @@ public class TestAudioPlayer {
         assertEquals(ZERO, audioPlayer.getTime());
         audioPlayer.play();
 
-        audioPlayer.setTime(ofMillis(500));
+        // give it a second, some players need some time to open the file/start playback
+        Thread.sleep(500);
+
+        audioPlayer.setTime(ofMillis(1000));
 
         // give it a second, some players need some time for seeking
         Thread.sleep(500);
 
-        // should be between 500 and 1200 now
+        // should be between 1000 and 1700 now
         final String name = audioPlayer.getClass().getSimpleName();
         final long start0 = System.nanoTime();
         final Duration time0 = audioPlayer.getTime();
         final long timeCallDuration0 = (System.nanoTime() - start0) / 1000L;
         System.out.println("timeCallDuration0 = " + timeCallDuration0);
         assertNotNull(time0, "Player time must not be null, but apparently is.");
-        assertTrue(time0.compareTo(ofMillis(500 + timeCallDuration0/1000L)) >= 0, name + ": Time should be greater than/equal to 0.5s (+" + timeCallDuration0 + "micros), but isn't: " + time0);
-        assertTrue(time0.compareTo(ofMillis(1200 + timeCallDuration0/1000L)) < 0, name + ": Time should be less than 1.2s (+" + timeCallDuration0 + "micros), but isn't: " + time0);
+        assertTrue(time0.compareTo(ofMillis(1000 + timeCallDuration0/1000L)) >= 0, name + ": Time should be greater than/equal to 1.0s (+" + timeCallDuration0 + "micros), but isn't: " + time0);
+        assertTrue(time0.compareTo(ofMillis(1700 + timeCallDuration0/1000L)) < 0, name + ": Time should be less than 1.7s (+" + timeCallDuration0 + "micros), but isn't: " + time0);
 
         audioPlayer.setTime(ofMillis(200));
 
