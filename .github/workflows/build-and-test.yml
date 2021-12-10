@@ -101,8 +101,6 @@ jobs:
 
       - name: Build/test code with Maven
         run: |
-          # jackd -rd dummy &
-          # sleep 5
           xvfb-run -a mvn --no-transfer-progress --batch-mode --file pom.xml install
           # xvfb-run -a mvn --no-transfer-progress --batch-mode --file pom.xml install -Dmaven.test.skip=true
           # xvfb-run -a mvn --no-transfer-progress --batch-mode --file audioplayer4j-complete/pom.xml install -Dtest=TestAudioPlayer#repeatedTestTimeForFileWhilePlaying,TestAudioPlayer#lineFlushTest
