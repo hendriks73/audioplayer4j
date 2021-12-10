@@ -301,6 +301,7 @@ public class JavaPlayer implements AudioPlayer {
         }
         open(url);
 //        forceInternalSetTime(ZERO);
+        //final boolean oldRunning = this.streamLinePump != null && this.streamLinePump.isRunning();
         this.streamLinePump = new StreamLinePump(stream, line);
         this.serializer.submit(streamLinePump);
     }
@@ -821,12 +822,13 @@ public class JavaPlayer implements AudioPlayer {
         private final boolean useCustomGainControl;
         private final SingleThreadedAudioInputStream stream;
         private long lineTimeDiff; // TODO: Use frames instead of timestamps
-        private boolean running = false;
+        private boolean running;
         private boolean stopped = false;
 
         private StreamLinePump(final SingleThreadedAudioInputStream stream, final SourceDataLine line) {
             if (!line.isOpen()) throw new IllegalStateException("Line must be open, but isn't: " + line);
             this.line = line;
+            this.running = line.isRunning();
             this.useCustomGainControl = line.getFormat().getSampleSizeInBits() == 24
                 && !line.isControlSupported(FloatControl.Type.MASTER_GAIN);
             this.stream = stream;
