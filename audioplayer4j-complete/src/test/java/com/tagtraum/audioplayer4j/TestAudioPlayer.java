@@ -182,8 +182,6 @@ public class TestAudioPlayer {
         audioPlayer.open(file.toUri());
         assertEquals(ZERO, audioPlayer.getTime());
         audioPlayer.play();
-
-        // wait until really, really started.
         started.await();
 
         // give it a second, some players need some time to open the file/start playback

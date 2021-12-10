@@ -346,7 +346,6 @@ public class JavaPlayer implements AudioPlayer {
         final SourceDataLine line = (SourceDataLine)audioDevice.getLine(lineInfo);
         final int bufferSize = desiredFormat.getFrameSize() *  (int)(desiredFormat.getFrameRate() * this.bufferSizeInSeconds);
         try {
-            line.addLineListener(event -> LOG.info("Line: " + event));
             line.open(desiredFormat, bufferSize);
         } catch (LineUnavailableException e) {
             LOG.log(Level.SEVERE, "Failed to open line with format " + desiredFormat +  " and buffer " + bufferSize + " on mixer " + audioDevice, e);
@@ -421,7 +420,7 @@ public class JavaPlayer implements AudioPlayer {
         final boolean oldPaused = this.paused;
         this.paused = false;
         if (LOG.isLoggable(Level.FINE)) LOG.fine("play(): line.start()");
-        line.start();
+        this.streamLinePump.start();
         this.propertyChangeSupport.firePropertyChange("paused", oldPaused, this.paused);
     }
 
@@ -434,7 +433,7 @@ public class JavaPlayer implements AudioPlayer {
         final boolean oldPaused = this.paused;
         this.paused = true;
         if (LOG.isLoggable(Level.FINE)) LOG.fine("pause(): line.stop()");
-        line.stop();
+        this.streamLinePump.stop();
         propertyChangeSupport.firePropertyChange("paused", oldPaused, paused);
     }
 
@@ -668,7 +667,7 @@ public class JavaPlayer implements AudioPlayer {
         if (this.time == null || time == null) {
 
             if (oldTime != time) {
-                LOG.log(Level.INFO, "internalSetTime(" + time + ", force=" + forceFire + ")", new RuntimeException());
+                LOG.log(Level.INFO, "[" + Thread.currentThread().getName() + "] internalSetTime(" + time + ", force=" + forceFire + ")");
             }
 
             this.time = time;
@@ -679,7 +678,7 @@ public class JavaPlayer implements AudioPlayer {
             if (forceFire || diff > minTimeEventDifference || diff < 0) {
 
                 if (!oldTime.equals(time)) {
-                    LOG.log(Level.INFO, "internalSetTime(" + time + ", force=" + forceFire + ")", new RuntimeException());
+                    LOG.log(Level.INFO, "[" + Thread.currentThread().getName() + "] internalSetTime(" + time + ", force=" + forceFire + ")");
                 }
 
                 this.time = time;
@@ -816,13 +815,14 @@ public class JavaPlayer implements AudioPlayer {
      * The loop automatically breaks, if the line is closed or the stream
      * has ended.
      */
-    private class StreamLinePump implements Runnable, LineListener {
+    private class StreamLinePump implements Runnable {
 
         private final SourceDataLine line;
         private final boolean useCustomGainControl;
         private final SingleThreadedAudioInputStream stream;
         private long lineTimeDiff; // TODO: Use frames instead of timestamps
-        private boolean stopped;
+        private boolean running = false;
+        private boolean stopped = false;
 
         private StreamLinePump(final SingleThreadedAudioInputStream stream, final SourceDataLine line) {
             if (!line.isOpen()) throw new IllegalStateException("Line must be open, but isn't: " + line);
@@ -830,21 +830,53 @@ public class JavaPlayer implements AudioPlayer {
             this.useCustomGainControl = line.getFormat().getSampleSizeInBits() == 24
                 && !line.isControlSupported(FloatControl.Type.MASTER_GAIN);
             this.stream = stream;
-            this.line.addLineListener(this);
+            this.line.addLineListener(event -> {
+                if (LOG.isLoggable(Level.INFO)) LOG.info("LineEvent: " + event);
+            });
             markLineTimeDiff(getStreamTime());
         }
 
-        public synchronized void stop() {
-            this.stopped = true;
-            this.notify();
+        private synchronized boolean isRunning() {
+            return running;
         }
 
-        @Override
-        public void update(final LineEvent event) {
-            if (LOG.isLoggable(Level.FINE)) LOG.fine("LineEvent: " + event);
-            synchronized (this) {
-                this.notifyAll();
+        private synchronized void setRunning(final boolean running) {
+            final boolean oldRunning = this.running;
+            this.running = running;
+            if (oldRunning != running) {
+                if (LOG.isLoggable(Level.INFO)) LOG.info("Pump: running = " + this.running + ", Line: isActive=" + line.isActive()
+                    + ", isRunning=" + line.isRunning()
+                    + ", isOpen=" + line.isOpen());
+                notifyAll();
             }
+        }
+
+        private synchronized boolean isStopped() {
+            return stopped;
+        }
+
+        private synchronized void setStopped(final boolean stopped) {
+            final boolean oldStopped = this.stopped;
+            this.stopped = stopped;
+            if (oldStopped != stopped) {
+                if (LOG.isLoggable(Level.INFO)) LOG.info("Pump: stopped = " + this.stopped + ", Line: isActive=" + line.isActive()
+                    + ", isRunning=" + line.isRunning()
+                    + ", isOpen=" + line.isOpen());
+                notifyAll();
+            }
+        }
+
+        public void stop() {
+            this.line.stop();
+            setRunning(false);
+        }
+
+        public void start() {
+            // NOTE: Starting the line does not lead to a START LineEvent, unless
+            //       something actually gets written to the line.
+            //       that's why we have to start the pump as well.
+            this.line.start();
+            setRunning(true);
         }
 
         public Duration getTime() {
@@ -853,23 +885,20 @@ public class JavaPlayer implements AudioPlayer {
                 final Duration seekTime = getSeekTime();
                 if (seekTime != null) {
                     time = seekTime;
-                    if (LOG.isLoggable(Level.FINEST)) {
-                        LOG.finest("getTime(), using seekTime: " + time);
-                    }
                 } else if (line != null && line.isOpen()) {
                     time = of(line.getMicrosecondPosition() - lineTimeDiff, MICROS);
-                    if (LOG.isLoggable(Level.INFO)) {
-                        LOG.info("getTime(), using line time: " + time);
-                        LOG.info("line.getMicrosecondPosition(): " + line.getMicrosecondPosition());
-                        LOG.info("lineTimeDiff: " + lineTimeDiff);
-                    }
                 } else {
                     time = getStreamTime();
-                    if (LOG.isLoggable(Level.FINEST)) {
-                        LOG.finest("getTime(), using getStreamTime(): " + time);
-                    }
                 }
-                LOG.info("time=" + time + ", seekTime=" + seekTime + ", line.isOpen=" + (line != null && line.isOpen()) + ", streamTime=" + getStreamTime());
+                if (LOG.isLoggable(Level.INFO))
+                    LOG.info("[" + Thread.currentThread().getName() + "] time=" + time
+                        + ", seekTime=" + seekTime
+                        + ", streamTime=" + getStreamTime()
+                        + (line == null ? ", line=null" :
+                        ", line.open=" + line.isOpen() + ", line.active=" + line.isActive()
+                            + ", line.running=" + line.isRunning()
+                            + ", line.TimeDiff=" + lineTimeDiff
+                            + ", line.MicrosecondPosition=" + line.getMicrosecondPosition()));
                 return time;
             }
         }
@@ -900,11 +929,11 @@ public class JavaPlayer implements AudioPlayer {
             int justRead = 0;
             try {
                 while (line.isOpen()) {
-                    if (stopped) throw new InterruptedException("Stopping " + this);
+                    if (isStopped()) throw new InterruptedException("Stopping " + this);
                     // seek with seek()
                     seekWithSeekableStream();
 
-                    if (stopped) throw new InterruptedException("Stopping " + this);
+                    if (isStopped()) throw new InterruptedException("Stopping " + this);
 
                     final Duration seekTime = getSeekTime();
                     final Duration streamTime = getStreamTime();
@@ -928,7 +957,7 @@ public class JavaPlayer implements AudioPlayer {
                                     LOG.info("line.drain()");
                                 }
                                 line.drain();
-                                if (stopped) throw new InterruptedException("Stopping " + this);
+                                if (isStopped()) throw new InterruptedException("Stopping " + this);
                                 quietClose();
                                 break;
                             } else {
@@ -1004,7 +1033,17 @@ public class JavaPlayer implements AudioPlayer {
                     if (useCustomGainControl) {
                         adjustVolume(buf);
                     }
-                    writeToLine(line, buf, justRead);
+
+                    // wait until the line is actually running
+                    // or we want to seek
+                    while (line.isOpen() && !isRunning() && getSeekTime() == null) {
+                        synchronized (this) {
+                            this.wait(100);
+                        }
+                    }
+                    if (getSeekTime() == null) {
+                        writeToLine(line, buf, justRead);
+                    }
                 }
                 resetSeekTime();
             } catch (IOException e) {
@@ -1052,9 +1091,9 @@ public class JavaPlayer implements AudioPlayer {
             int pos = 0;
             while (pos < length && line.isOpen()) {
                 if (LOG.isLoggable(Level.INFO)) {
-                    LOG.info("Wrote " + pos + "/" + length + " bytes");
+                    LOG.info("Wrote " + pos + "/" + length + " bytes, line.isRunning()=" + line.isRunning());
                 }
-                if (stopped) throw new InterruptedException("Stopping " + this);
+                if (isStopped()) throw new InterruptedException("Stopping " + this);
                 final int available = line.available();
                 final int bufferSize = line.getBufferSize();
                 final int chunkLength;
@@ -1090,6 +1129,13 @@ public class JavaPlayer implements AudioPlayer {
                     break;
                 }
                 internalSetTime(getTime(), false);
+                if (written == 0) {
+                    // wait a little to make this less of a busy wait
+                    // we will be notified, when a line event occurs (start/stop)
+                    synchronized (this) {
+                        this.wait(100);
+                    }
+                }
             }
             if (LOG.isLoggable(Level.INFO)) {
                 LOG.info("End of write loop for " + length + " bytes. Wrote " + pos + " bytes");
@@ -1137,7 +1183,7 @@ public class JavaPlayer implements AudioPlayer {
                     } catch (UnsupportedAudioFileException | LineUnavailableException | ExecutionException | IOException e1) {
                         LOG.log(Level.SEVERE, "Failed to re-open " + song, e1);
                     }
-                    this.stopped = true;
+                    this.running = false;
                     final InterruptedException interruptedException = new InterruptedException("Seek failed with " + e );
                     interruptedException.initCause(e);
                     throw interruptedException;
@@ -1173,8 +1219,9 @@ public class JavaPlayer implements AudioPlayer {
             LOG.info("Closing " + autoCloseable);
             try {
                 if (autoCloseable instanceof Line) {
-                    if (((Line) autoCloseable).isOpen())
+                    if (((Line) autoCloseable).isOpen()) {
                         autoCloseable.close();
+                    }
                 } else {
                     autoCloseable.close();
                 }
