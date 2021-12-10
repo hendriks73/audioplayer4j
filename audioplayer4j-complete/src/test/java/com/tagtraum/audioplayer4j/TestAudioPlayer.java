@@ -153,7 +153,7 @@ public class TestAudioPlayer {
             assertFalse(events.hasNext(), "Unexpected event: " + events.next() + ", all events: " + listener.getEvents());
     }
 
-    @RepeatedTest(1)
+    @RepeatedTest(10)
     public void repeatedTestTimeForFileWhilePlaying() throws UnsupportedAudioFileException, IOException, InterruptedException {
         testTimeForFileWhilePlaying(new JavaPlayer());
     }
