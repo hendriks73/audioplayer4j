@@ -24,11 +24,15 @@ public interface AudioPlayer extends AutoCloseable {
 
     /**
      * Opens the audio resource with the given URI.
+     * In order to fully exploit different capabilities of
+     * different implementations, you might rather want to
+     * use {@link AudioPlayerFactory#open(URI)} instead.
      *
      * @param uri audio resource URI
      * @throws UnsupportedAudioFileException if the stream does not point to
      *         valid audio file data recognized by the system
      * @throws IOException if an input/output exception occurs
+     * @see AudioPlayerFactory#open(URI)
      */
     void open(URI uri) throws UnsupportedAudioFileException, IOException;
 
