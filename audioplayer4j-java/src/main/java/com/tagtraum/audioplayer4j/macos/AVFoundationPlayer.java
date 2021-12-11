@@ -6,10 +6,7 @@
  */
 package com.tagtraum.audioplayer4j.macos;
 
-import com.tagtraum.audioplayer4j.AudioDevice;
-import com.tagtraum.audioplayer4j.AudioPlayer;
-import com.tagtraum.audioplayer4j.AudioPlayerException;
-import com.tagtraum.audioplayer4j.AudioPlayerListener;
+import com.tagtraum.audioplayer4j.*;
 import com.tagtraum.audioplayer4j.device.DefaultAudioDevice;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
@@ -48,7 +45,6 @@ public class AVFoundationPlayer implements AudioPlayer {
     private static final Logger LOG = Logger.getLogger(AVFoundationPlayer.class.getName());
     private static final int IDLE_DELAY = 250;
     private static final AtomicInteger id = new AtomicInteger(0);
-    private static Cleaner cleaner;
 
     static {
         NativeLibraryLoader.loadLibrary();
@@ -82,7 +78,19 @@ public class AVFoundationPlayer implements AudioPlayer {
     public AVFoundationPlayer() {
         this(java.util.concurrent.Executors.newSingleThreadExecutor(
             r -> new Thread(r, "Player Thread " + id.incrementAndGet())
-        ), getLibraryCleaner());
+        ), Cleaner.create());
+    }
+
+    /**
+     * Create an instance using a private new execution thread.
+     *
+     * @param cleaner cleaner instance used to ensure proper clean up when this instance becomes
+     *                eligible for garbage collection
+     */
+    public AVFoundationPlayer(final Cleaner cleaner) {
+        this(java.util.concurrent.Executors.newSingleThreadExecutor(
+            r -> new Thread(r, "Player Thread " + id.incrementAndGet())
+        ), cleaner);
     }
 
     /**
@@ -98,13 +106,6 @@ public class AVFoundationPlayer implements AudioPlayer {
         }
         this.serializer = serializer;
         this.instanceCleaner = cleaner;
-    }
-
-    private static synchronized Cleaner getLibraryCleaner() {
-        if (cleaner == null) {
-            cleaner = Cleaner.create();
-        }
-        return cleaner;
     }
 
     @Override

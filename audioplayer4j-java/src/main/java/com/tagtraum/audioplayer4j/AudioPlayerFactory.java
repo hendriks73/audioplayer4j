@@ -12,6 +12,7 @@ import com.tagtraum.audioplayer4j.macos.AVFoundationPlayer;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.IOException;
+import java.lang.ref.Cleaner;
 import java.net.URI;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -25,7 +26,9 @@ public class AudioPlayerFactory {
 
     private static final Logger LOG = Logger.getLogger(AudioPlayerFactory.class.getName());
     private static final boolean MAC = System.getProperty("os.name").toLowerCase().contains("mac");
+    private static final Cleaner CLEANER = Cleaner.create();
     private static Boolean JAVA_FX;
+
 
     private AudioPlayerFactory() {
     }
@@ -37,6 +40,7 @@ public class AudioPlayerFactory {
      * @param uri audio resource URI
      * @return audio player instance
      * @throws IOException if the URI cannot be opened
+     * @see #open(URI, AudioDevice)
      */
     public static AudioPlayer open(final URI uri) throws IOException, UnsupportedAudioFileException {
         return open(uri, null);
@@ -50,6 +54,7 @@ public class AudioPlayerFactory {
      * @param audioDevice desired audio device
      * @return audio player instance
      * @throws IOException if the URI cannot be opened
+     * @see #open(URI)
      */
     public static AudioPlayer open(final URI uri, final AudioDevice audioDevice) throws IOException, UnsupportedAudioFileException {
         Exception lastException;
@@ -58,7 +63,7 @@ public class AudioPlayerFactory {
         // uses the least system resources
         if (MAC) {
             try {
-                final AudioPlayer audioPlayer = new AVFoundationPlayer();
+                final AudioPlayer audioPlayer = new AVFoundationPlayer(CLEANER);
                 if (audioDevice != null) {
                     audioPlayer.setAudioDevice(audioDevice);
                 }
@@ -71,7 +76,7 @@ public class AudioPlayerFactory {
 
         // Java is always available, but can it play the desired resource?
         try {
-            final AudioPlayer audioPlayer = new JavaPlayer();
+            final AudioPlayer audioPlayer = new JavaPlayer(CLEANER);
             if (audioDevice != null) {
                 audioPlayer.setAudioDevice(audioDevice);
             }

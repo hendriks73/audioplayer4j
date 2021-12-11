@@ -61,7 +61,6 @@ public class JavaPlayer implements AudioPlayer {
     private static final String JAVAPLAYER_BUFFER = "javaplayer.buffer";
     private static final AtomicInteger id = new AtomicInteger(0);
     private static final int DEFAULT_MIN_TIME_EVENT_DIFFERENCE = 200;
-    private static Cleaner cleaner;
 
     private final PropertyChangeSupport propertyChangeSupport = new SwingPropertyChangeSupport(this, true);
     private final ExecutorService serializer;
@@ -98,7 +97,7 @@ public class JavaPlayer implements AudioPlayer {
      * a library wide cleaner instance.
      */
     public JavaPlayer() {
-        this(getLibraryCleaner());
+        this(Cleaner.create());
     }
 
     /**
@@ -114,17 +113,10 @@ public class JavaPlayer implements AudioPlayer {
         this.instanceCleaner = cleaner;
     }
 
-    private static synchronized Cleaner getLibraryCleaner() {
-        if (cleaner == null) {
-            cleaner = Cleaner.create();
-        }
-        return cleaner;
-    }
-
     /**
      * Minimum delay in ms between "time" property events.
      *
-     * @return time in ms
+     * @return time in milliseconds
      */
     public int getMinTimeEventDifference() {
         return minTimeEventDifference;
@@ -133,7 +125,7 @@ public class JavaPlayer implements AudioPlayer {
     /**
      * Minimum delay in ms between "time" property events.
      *
-     * @param minTimeEventDifference time in ms
+     * @param minTimeEventDifference time in milliseconds
      */
     public void setMinTimeEventDifference(final int minTimeEventDifference) {
         this.minTimeEventDifference = minTimeEventDifference;
@@ -166,13 +158,16 @@ public class JavaPlayer implements AudioPlayer {
             try {
                 this.audioDevice = audioDevice;
                 if (this.audioFileFormat != null) {
-                    final boolean startLine = line != null && line.isRunning();
+                    final boolean startPump = streamLinePump != null && streamLinePump.isRunning();
                     openLine();
+                    if (this.streamLinePump != null) {
+                        this.streamLinePump.stop();
+                    }
                     this.streamLinePump = new StreamLinePump(stream, line);
                     this.serializer.submit(streamLinePump);
-                    if (startLine) {
-                        if (LOG.isLoggable(Level.FINE)) LOG.fine("line.start()");
-                        line.start();
+                    if (startPump) {
+                        if (LOG.isLoggable(Level.FINE)) LOG.fine("streamLinePump.start()");
+                        this.streamLinePump.start();
                     }
                 }
                 setVolume(this.volume);
@@ -203,6 +198,7 @@ public class JavaPlayer implements AudioPlayer {
             close();
             return;
         }
+
         if (LOG.isLoggable(Level.FINE)) LOG.fine("open(): " + song);
         final URI oldSong = this.song;
         final Duration oldDuration = this.duration;
@@ -222,6 +218,7 @@ public class JavaPlayer implements AudioPlayer {
             }
             this.audioFileFormat = ExtAudioSystem.getAudioFileFormat(url);
             this.duration = getDuration(audioFileFormat);
+
             try {
                 openLine();
             } catch(IllegalArgumentException e) {
@@ -230,7 +227,9 @@ public class JavaPlayer implements AudioPlayer {
                 reE.initCause(e);
                 throw reE;
             }
+
             open(url);
+
             internalSetTime(ZERO, false);
             this.streamLinePump = new StreamLinePump(stream, line);
             this.serializer.submit(streamLinePump);
