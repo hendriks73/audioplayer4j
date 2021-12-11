@@ -54,14 +54,93 @@ public class TestAudioPlayer {
 
     @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("players")
+    public void testOpenCloseOpenClose(final AudioPlayer audioPlayer) throws UnsupportedAudioFileException, IOException, InterruptedException, InvocationTargetException {
+        final URI uri = extractFile("test.wav").toUri();
+        final MemoryPropertyChangeListener pausedListener = new MemoryPropertyChangeListener();
+        final MemoryPropertyChangeListener uriListener = new MemoryPropertyChangeListener();
+        audioPlayer.addPropertyChangeListener("paused", pausedListener);
+        audioPlayer.addPropertyChangeListener("uri", uriListener);
+
+        audioPlayer.open(uri);
+        audioPlayer.play();
+        Thread.sleep(500);
+        audioPlayer.close();
+
+        audioPlayer.open(uri);
+        audioPlayer.play();
+        Thread.sleep(500);
+        audioPlayer.close();
+        Thread.sleep(500);
+
+        // sync with EDT
+        SwingUtilities.invokeAndWait(() -> {});
+
+        final String name = audioPlayer.getClass().getSimpleName();
+        final String pausedmessage = "Failure for " + name + ". Paused events=" + pausedListener.getEvents();
+
+        final Iterator<PropertyChangeEvent> pausedEvents = pausedListener.getEvents().iterator();
+
+        final PropertyChangeEvent playEvent0 = pausedEvents.next();
+        assertEquals("paused", playEvent0.getPropertyName());
+        assertTrue((Boolean)playEvent0.getOldValue(), pausedmessage);
+        assertFalse((Boolean)playEvent0.getNewValue(), pausedmessage);
+
+        final PropertyChangeEvent closeEvent0 = pausedEvents.next();
+        assertEquals("paused", closeEvent0.getPropertyName());
+        assertFalse((Boolean)closeEvent0.getOldValue(), pausedmessage);
+        assertTrue((Boolean)closeEvent0.getNewValue(), pausedmessage);
+
+        final PropertyChangeEvent playEvent1 = pausedEvents.next();
+        assertEquals("paused", playEvent1.getPropertyName());
+        assertTrue((Boolean)playEvent1.getOldValue(), pausedmessage);
+        assertFalse((Boolean)playEvent1.getNewValue(), pausedmessage);
+
+        final PropertyChangeEvent closeEvent1 = pausedEvents.next();
+        assertEquals("paused", closeEvent1.getPropertyName());
+        assertFalse((Boolean)closeEvent1.getOldValue(), pausedmessage);
+        assertTrue((Boolean)closeEvent1.getNewValue(), pausedmessage);
+
+        if (pausedEvents.hasNext())
+            assertFalse(pausedEvents.hasNext(), "Unexpected event: " + pausedEvents.next() + ", all events: " + pausedListener.getEvents());
+
+
+        final String uriMessage = "Failure for " + name + ". URI events=" + pausedListener.getEvents();
+
+        final Iterator<PropertyChangeEvent> uriEvents = uriListener.getEvents().iterator();
+
+        final PropertyChangeEvent openEvent0 = uriEvents.next();
+        assertEquals("uri", openEvent0.getPropertyName());
+        assertNull(openEvent0.getOldValue(), uriMessage);
+        assertEquals(uri, openEvent0.getNewValue(), uriMessage);
+
+        final PropertyChangeEvent closeEvent2 = uriEvents.next();
+        assertEquals("uri", closeEvent2.getPropertyName());
+        assertEquals(uri, closeEvent2.getOldValue(), uriMessage);
+        assertNull(closeEvent2.getNewValue(), uriMessage);
+
+        final PropertyChangeEvent openEvent1 = uriEvents.next();
+        assertEquals("uri", openEvent1.getPropertyName());
+        assertNull(openEvent1.getOldValue(), uriMessage);
+        assertEquals(uri, openEvent1.getNewValue(), uriMessage);
+
+        final PropertyChangeEvent closeEvent3 = uriEvents.next();
+        assertEquals("uri", closeEvent3.getPropertyName());
+        assertEquals(uri, closeEvent3.getOldValue(), uriMessage);
+        assertNull(closeEvent3.getNewValue(), uriMessage);
+
+        if (uriEvents.hasNext())
+            assertFalse(uriEvents.hasNext(), "Unexpected event: " + uriEvents.next() + ", all events: " + uriListener.getEvents());
+    }
+
+    @ParameterizedTest(name = "{index}: {0}")
+    @MethodSource("players")
     public void testOpenAudioPlayer(final AudioPlayer audioPlayer) throws UnsupportedAudioFileException, IOException {
         final Path file = extractFile("test.wav");
         audioPlayer.open(file.toUri());
 
         // sync with EDT
         try {
-            SwingUtilities.invokeAndWait(() -> {
-            });
+            SwingUtilities.invokeAndWait(() -> {});
         } catch (Exception e) {
             // ignore
         }
