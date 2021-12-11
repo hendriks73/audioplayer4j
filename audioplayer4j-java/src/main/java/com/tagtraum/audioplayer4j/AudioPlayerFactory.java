@@ -25,7 +25,7 @@ public class AudioPlayerFactory {
 
     private static final Logger LOG = Logger.getLogger(AudioPlayerFactory.class.getName());
     private static final boolean MAC = System.getProperty("os.name").toLowerCase().contains("mac");
-    private static final boolean JAVA_FX = isJavaFXAvailable();
+    private static Boolean JAVA_FX;
 
     private AudioPlayerFactory() {
     }
@@ -83,7 +83,7 @@ public class AudioPlayerFactory {
         }
 
         // last fallback, if JavaFX is available
-        if (JAVA_FX) {
+        if (isJavaFXAvailable()) {
             try {
                 final AudioPlayer audioPlayer = new JavaFXPlayer();
                 if (audioDevice != null) {
@@ -109,7 +109,10 @@ public class AudioPlayerFactory {
      *
      * @return true or false
      */
-    private static boolean isJavaFXAvailable() {
+    private static synchronized boolean isJavaFXAvailable() {
+        if (JAVA_FX != null) {
+            return JAVA_FX;
+        }
         boolean available = false;
         try {
             Class.forName("javafx.scene.media.MediaPlayer");
@@ -117,7 +120,8 @@ public class AudioPlayerFactory {
         } catch (Throwable e) {
             LOG.log(Level.INFO, "JavaFX MediaPlayer is not available. Correct modules installed?", e);
         }
-        return available;
+        JAVA_FX = available;
+        return JAVA_FX;
     }
 
 }
