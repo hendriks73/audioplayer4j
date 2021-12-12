@@ -122,6 +122,7 @@ public class TestAudioPlayerFactory {
         // Java
         AudioPlayerFactory.setJavaEnabled(true);
         try (final AudioPlayer player = AudioPlayerFactory.open(uri)) {
+            assertNotNull(player, "Java implementation MUST be available");
             TestAudioPlayer.testOpenAudioPlayer(uri, player);
 
         } catch (UnsupportedAudioFileException e) {
@@ -132,7 +133,11 @@ public class TestAudioPlayerFactory {
         // JavaFX
         AudioPlayerFactory.setJavaFXEnabled(true);
         try (final AudioPlayer player = AudioPlayerFactory.open(uri)) {
-            TestAudioPlayer.testOpenAudioPlayer(uri, player);
+            if (player != null) {
+                TestAudioPlayer.testOpenAudioPlayer(uri, player);
+            } else {
+                System.out.println("JavaFX player not available/implemented");
+            }
 
         } catch (UnsupportedAudioFileException e) {
             System.out.println("Not supported: " + e);
@@ -142,7 +147,11 @@ public class TestAudioPlayerFactory {
         // Native
         AudioPlayerFactory.setNativeEnabled(true);
         try (final AudioPlayer player = AudioPlayerFactory.open(uri)) {
-            TestAudioPlayer.testOpenAudioPlayer(uri, player);
+            if (player != null) {
+                TestAudioPlayer.testOpenAudioPlayer(uri, player);
+            } else {
+                System.out.println("Native player not available/implemented");
+            }
 
         } catch (UnsupportedAudioFileException e) {
             System.out.println("Not supported: " + e);
