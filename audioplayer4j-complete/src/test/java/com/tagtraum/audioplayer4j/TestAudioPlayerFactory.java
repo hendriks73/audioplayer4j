@@ -7,8 +7,10 @@
 package com.tagtraum.audioplayer4j;
 
 import com.tagtraum.audioplayer4j.device.DefaultAudioDevice;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -49,6 +51,15 @@ public class TestAudioPlayerFactory {
                     Files.deleteIfExists(p);
             }
         }
+    }
+
+    @BeforeEach
+    @AfterEach
+    public void enableAllPlayers() {
+        // ensure all player implementations are enabled
+        AudioPlayerFactory.setJavaEnabled(true);
+        AudioPlayerFactory.setJavaFXEnabled(true);
+        AudioPlayerFactory.setNativeEnabled(true);
     }
 
     @ParameterizedTest
