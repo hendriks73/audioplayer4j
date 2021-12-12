@@ -43,7 +43,6 @@ import java.util.logging.Logger;
 public class AVFoundationPlayer implements AudioPlayer {
 
     private static final Logger LOG = Logger.getLogger(AVFoundationPlayer.class.getName());
-    private static final int IDLE_DELAY = 250;
     private static final AtomicInteger id = new AtomicInteger(0);
 
     static {
@@ -70,6 +69,7 @@ public class AVFoundationPlayer implements AudioPlayer {
     private URI songURI;
     private boolean unstarted;
     private boolean unfinished;
+    private int minTimeEventDifference = DEFAULT_MIN_TIME_EVENT_DIFFERENCE;
 
     /**
      * Create an instance using a private new execution thread and a private
@@ -106,6 +106,19 @@ public class AVFoundationPlayer implements AudioPlayer {
         }
         this.serializer = serializer;
         this.instanceCleaner = cleaner;
+    }
+
+    @Override
+    public int getMinTimeEventDifference() {
+        return minTimeEventDifference;
+    }
+
+    @Override
+    public void setMinTimeEventDifference(final int minTimeEventDifference) {
+        final int oldMinTimeEventDifference = this.minTimeEventDifference;
+        this.minTimeEventDifference = minTimeEventDifference;
+        this.propertyChangeSupport.firePropertyChange("minTimeEventDifference",
+            oldMinTimeEventDifference, this.minTimeEventDifference);
     }
 
     @Override
@@ -264,7 +277,7 @@ public class AVFoundationPlayer implements AudioPlayer {
             } else {
                 this.task = new Timer();
             }
-            this.task.schedule(new TaskCall(), IDLE_DELAY);
+            this.task.schedule(new TaskCall(), minTimeEventDifference);
             final boolean oldPaused = this.paused;
             this.paused = false;
             this.unpausedTime = Instant.now();
@@ -400,7 +413,7 @@ public class AVFoundationPlayer implements AudioPlayer {
 
     @Override
     public void setVolume(final float volume) {
-        if (volume < 0.0 || volume > 1.0) throw new IllegalArgumentException("Volume has to be >= 0.0 and <= 1.0: " + volume);
+        if (volume < 0.0f || volume > 1.0f) throw new IllegalArgumentException("Volume has to be >= 0.0 and <= 1.0: " + volume);
         final float oldEffectiveVolume = this.effectiveVolume;
         final float oldVolume = this.volume;
         this.volume = volume;
@@ -415,6 +428,9 @@ public class AVFoundationPlayer implements AudioPlayer {
         } else {
             propertyChangeSupport.firePropertyChange("volume", oldVolume, volume);
             propertyChangeSupport.firePropertyChange("effectiveVolume", oldEffectiveVolume, effectiveVolume);
+        }
+        if (this.muted && volume > 0f) {
+            setMuted(false);
         }
     }
 
@@ -722,7 +738,7 @@ public class AVFoundationPlayer implements AudioPlayer {
                             final boolean playing = pointers != null && isPlaying(AVFoundationPlayer.this.pointers[0]);
                             if (playing) {
                                 if (pointers != null && songURI != null) {
-                                    task.schedule(new TaskCall(), IDLE_DELAY);
+                                    task.schedule(new TaskCall(), minTimeEventDifference);
                                 }
 
                                 // check for errors and restart of necessary

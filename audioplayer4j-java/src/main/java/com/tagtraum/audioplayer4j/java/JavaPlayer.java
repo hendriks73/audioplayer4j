@@ -60,7 +60,6 @@ public class JavaPlayer implements AudioPlayer {
     private static final Preferences PREFERENCES = Preferences.userNodeForPackage(JavaPlayer.class);
     private static final String JAVAPLAYER_BUFFER = "javaplayer.buffer";
     private static final AtomicInteger id = new AtomicInteger(0);
-    private static final int DEFAULT_MIN_TIME_EVENT_DIFFERENCE = 200;
 
     private final PropertyChangeSupport propertyChangeSupport = new SwingPropertyChangeSupport(this, true);
     private final ExecutorService serializer;
@@ -113,22 +112,17 @@ public class JavaPlayer implements AudioPlayer {
         this.instanceCleaner = cleaner;
     }
 
-    /**
-     * Minimum delay in ms between "time" property events.
-     *
-     * @return time in milliseconds
-     */
+    @Override
     public int getMinTimeEventDifference() {
         return minTimeEventDifference;
     }
 
-    /**
-     * Minimum delay in ms between "time" property events.
-     *
-     * @param minTimeEventDifference time in milliseconds
-     */
+    @Override
     public void setMinTimeEventDifference(final int minTimeEventDifference) {
+        final int oldMinTimeEventDifference = this.minTimeEventDifference;
         this.minTimeEventDifference = minTimeEventDifference;
+        this.propertyChangeSupport.firePropertyChange("minTimeEventDifference",
+            oldMinTimeEventDifference, this.minTimeEventDifference);
     }
 
     /**
@@ -286,7 +280,11 @@ public class JavaPlayer implements AudioPlayer {
 
     private void reopen() throws InterruptedException, UnsupportedAudioFileException, LineUnavailableException, ExecutionException, IOException {
         if (LOG.isLoggable(Level.FINE)) LOG.fine("Re-opening " + song);
-        // ensure line is still open, if not re-open
+        // empty current line
+        if (line != null && line.isOpen()) {
+            line.flush();
+        }
+        // ensure open line
         if (line != null && !line.isOpen()) {
             openLine();
         }
@@ -474,36 +472,14 @@ public class JavaPlayer implements AudioPlayer {
 
     @Override
     public void reset() {
-        final boolean oldPaused = paused;
-        this.paused = true;
-        if (line != null) {
-            if (LOG.isLoggable(Level.FINE)) LOG.fine("line.close()");
-            line.close();
+        if (audioFileFormat == null || stream == null || line == null) {
+            throw new IllegalStateException("No resource opened.");
         }
-        this.serializer.submit(() -> {
-            if (line != null) {
-                if (LOG.isLoggable(Level.FINE)) LOG.fine("line.flush()");
-                line.flush();
-            }
-            if (this.streamCleanable != null) {
-                this.streamCleanable.clean();
-                this.streamCleanable = null;
-            }
-            this.stream = null;
-
-            if (song != null) {
-                try {
-                    open(song);
-                    if (!oldPaused) {
-                        play();
-                    }
-                } catch (Exception e) {
-                    LOG.log(Level.SEVERE, e.toString(), e);
-                }
-            } else {
-                LOG.warning("Call to reset() even though no song is open.");
-            }
-        });
+        try {
+            reopen();
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Failed to reset song " + song, e);
+        }
     }
 
     @Override
@@ -518,6 +494,7 @@ public class JavaPlayer implements AudioPlayer {
 
     @Override
     public void setVolume(final float volume) {
+        if (volume < 0.0f || volume > 1.0f) throw new IllegalArgumentException("Volume has to be >= 0.0 and <= 1.0: " + volume);
         final float oldVolume = this.volume;
         final float oldEffectiveVolume = this.effectiveVolume;
         this.volume = volume;

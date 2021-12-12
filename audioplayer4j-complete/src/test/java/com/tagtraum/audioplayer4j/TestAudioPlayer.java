@@ -9,7 +9,9 @@ package com.tagtraum.audioplayer4j;
 import com.tagtraum.audioplayer4j.java.JavaPlayer;
 import com.tagtraum.audioplayer4j.javafx.JavaFXPlayer;
 import com.tagtraum.audioplayer4j.macos.AVFoundationPlayer;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -160,6 +162,9 @@ public class TestAudioPlayer {
         audioPlayer.addPropertyChangeListener("time", listener);
 
         final Path file = extractFile("test.wav");
+
+        assertNull(audioPlayer.getTime());
+        assertThrows(IllegalStateException.class, () -> audioPlayer.setTime(ofMillis(100)));
 
         audioPlayer.open(file.toUri());
 
@@ -383,6 +388,9 @@ public class TestAudioPlayer {
         final MemoryPropertyChangeListener mutedListener = new MemoryPropertyChangeListener();
         audioPlayer.addPropertyChangeListener("muted", mutedListener);
 
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {audioPlayer.setVolume(-1f);});
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {audioPlayer.setVolume(1.0001f);});
+
         final URI uri = extractFile("test.wav").toUri();
         assertEquals(1f, audioPlayer.getVolume());
 
@@ -410,6 +418,11 @@ public class TestAudioPlayer {
         assertFalse(audioPlayer.isMuted());
         assertEquals(0.5f, audioPlayer.getVolume());
 
+        // test auto-unmute (i.e. muted, then set volume to > 0)
+        audioPlayer.setMuted(true);
+        assertTrue(audioPlayer.isMuted());
+        audioPlayer.setVolume(0.9f);
+
         audioPlayer.close();
 
 
@@ -428,19 +441,34 @@ public class TestAudioPlayer {
         assertEquals(0.75f, e5.getOldValue());
         assertEquals(0.5f, e5.getNewValue());
 
+        final PropertyChangeEvent e9 = volumeEvents.next();
+        assertEquals("volume", e9.getPropertyName());
+        assertEquals(0.5f, e9.getOldValue());
+        assertEquals(0.9f, e9.getNewValue());
+
         assertFalse(volumeEvents.hasNext());
 
         final Iterator<PropertyChangeEvent> mutedEvents = mutedListener.getEvents().iterator();
 
-        final PropertyChangeEvent eMuted = mutedEvents.next();
-        assertEquals("muted", eMuted.getPropertyName());
-        assertEquals(false, eMuted.getOldValue());
-        assertEquals(true, eMuted.getNewValue());
+        final PropertyChangeEvent eMuted0 = mutedEvents.next();
+        assertEquals("muted", eMuted0.getPropertyName());
+        assertEquals(false, eMuted0.getOldValue());
+        assertEquals(true, eMuted0.getNewValue());
 
-        final PropertyChangeEvent eUnmuted = mutedEvents.next();
-        assertEquals("muted", eUnmuted.getPropertyName());
-        assertEquals(true, eUnmuted.getOldValue());
-        assertEquals(false, eUnmuted.getNewValue());
+        final PropertyChangeEvent eUnmuted0 = mutedEvents.next();
+        assertEquals("muted", eUnmuted0.getPropertyName());
+        assertEquals(true, eUnmuted0.getOldValue());
+        assertEquals(false, eUnmuted0.getNewValue());
+
+        final PropertyChangeEvent eMuted1 = mutedEvents.next();
+        assertEquals("muted", eMuted1.getPropertyName());
+        assertEquals(false, eMuted1.getOldValue());
+        assertEquals(true, eMuted1.getNewValue());
+
+        final PropertyChangeEvent eUnmuted1 = mutedEvents.next();
+        assertEquals("muted", eUnmuted1.getPropertyName());
+        assertEquals(true, eUnmuted1.getOldValue());
+        assertEquals(false, eUnmuted1.getNewValue());
 
         assertFalse(mutedEvents.hasNext());
     }
@@ -632,9 +660,6 @@ public class TestAudioPlayer {
     @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("players")
     public void testFinished(final AudioPlayer audioPlayer) throws IOException, InterruptedException, UnsupportedAudioFileException {
-
-        System.out.println("testFinished()");
-
         final MemoryAudioPlayerListener listener = new MemoryAudioPlayerListener();
         audioPlayer.addAudioPlayerListener(listener);
         final MemoryPropertyChangeListener timeListener = new MemoryPropertyChangeListener();
@@ -705,6 +730,76 @@ public class TestAudioPlayer {
         assertFalse(player.getDuration().isNegative());
         assertFalse(player.getDuration().isZero());
     }
+
+    @Test
+    public void testGainToVolume() {
+        assertEquals(0.0001f, AudioPlayer.gainToVolume(-80f));
+        assertEquals(1f, AudioPlayer.gainToVolume(80f));
+        final float volumeP200 = AudioPlayer.gainToVolume(200);
+        assertTrue(volumeP200>=0f && volumeP200<=1f);
+        final float volumeM200 = AudioPlayer.gainToVolume(-200);
+        assertTrue(volumeM200>=0f && volumeM200<=1f);
+        final float volumeM5 = AudioPlayer.gainToVolume(-5);
+        assertTrue(volumeM5>=0f && volumeM5<=1f);
+        final float volumeP5 = AudioPlayer.gainToVolume(5);
+        assertTrue(volumeP5>=0f && volumeP5<=1f);
+    }
+
+    @Test
+    public void testVolumeToGain() {
+        assertEquals(0f, AudioPlayer.volumeToGain(1f));
+        assertEquals(-20f, AudioPlayer.volumeToGain(0.1f));
+        assertEquals(-80f, AudioPlayer.volumeToGain(0.0001f));
+        assertEquals(-80f, AudioPlayer.volumeToGain(0f));
+    }
+
+    @ParameterizedTest(name = "{index}: {0}")
+    @MethodSource("players")
+    public void testMinTimeEventDifference(final AudioPlayer player) {
+        assertEquals(200, player.getMinTimeEventDifference());
+        player.setMinTimeEventDifference(400);
+        assertEquals(400, player.getMinTimeEventDifference());
+    }
+
+    @ParameterizedTest(name = "{index}: {0}")
+    @MethodSource("players")
+    public void testReset(final AudioPlayer audioPlayer) throws InterruptedException, UnsupportedAudioFileException, IOException {
+        final MemoryAudioPlayerListener listener = new MemoryAudioPlayerListener();
+        audioPlayer.addAudioPlayerListener(listener);
+        final MemoryPropertyChangeListener timeListener = new MemoryPropertyChangeListener();
+        audioPlayer.addPropertyChangeListener("time", timeListener);
+
+        Assertions.assertThrows(IllegalStateException.class, audioPlayer::reset);
+
+        final URI uri = extractFile("test.wav").toUri();
+        audioPlayer.open(uri);
+        audioPlayer.play();
+
+        Thread.sleep(500);
+
+        audioPlayer.reset();
+
+        Thread.sleep(500);
+
+        assertFalse(audioPlayer.isPaused());
+        final Duration time = audioPlayer.getTime();
+        assertTrue(time.compareTo(ofMillis(250)) >= 0);
+        assertTrue(time.compareTo(ofMillis(750)) < 0);
+
+        audioPlayer.close();
+
+        Thread.sleep(500);
+
+        assertEquals(2, listener.getEvents().size(),
+            "Before close(). Expected 2 events for " + audioPlayer.getClass().getSimpleName() + " and got: " + listener.getEvents() + ", time events: " + timeListener.getEvents());
+        final Iterator<String> iterator = listener.getEvents().iterator();
+
+        assertEquals("started", iterator.next());
+        assertEquals("finished", iterator.next());
+
+        assertFalse(iterator.hasNext());
+    }
+
 
     public static Stream<Arguments> players() {
         final List<Arguments> players = new ArrayList<>();

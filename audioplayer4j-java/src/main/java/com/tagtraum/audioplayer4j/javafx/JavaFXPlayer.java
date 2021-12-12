@@ -54,7 +54,7 @@ public class JavaFXPlayer implements AudioPlayer {
     private static boolean javaFXInitialized;
     private final PropertyChangeSupport propertyChangeSupport = new SwingPropertyChangeSupport(this, true);
     private final List<AudioPlayerListener> audioPlayerListeners = new ArrayList<>();
-    private final Timer timer = new Timer(100, new ActionListener() {
+    private final Timer timer = new Timer(AudioPlayer.DEFAULT_MIN_TIME_EVENT_DIFFERENCE, new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
             JavaFXUtilities.invokeLater(() -> {
@@ -111,6 +111,19 @@ public class JavaFXPlayer implements AudioPlayer {
                 throw new AudioPlayerException(e);
             }
         }
+    }
+
+    @Override
+    public int getMinTimeEventDifference() {
+        return timer.getDelay();
+    }
+
+    @Override
+    public void setMinTimeEventDifference(final int minTimeEventDifference) {
+        final int oldMinTimeEventDifference = this.timer.getDelay();
+        this.timer.setDelay(minTimeEventDifference);
+        this.propertyChangeSupport.firePropertyChange("minTimeEventDifference",
+            oldMinTimeEventDifference, minTimeEventDifference);
     }
 
     @Override
@@ -296,13 +309,15 @@ public class JavaFXPlayer implements AudioPlayer {
 
     @Override
     public void reset() {
-        if (player == null) return;
+        if (player == null) {
+            throw new IllegalStateException("Player wasn't opened.");
+        }
         try {
             JavaFXUtilities.invokeAndWait((Callable<Void>) () -> {
                 final long oldTime = (long)player.getCurrentTime().toMillis();
-                player.pause();
                 player.seek(new Duration(0));
-                propertyChangeSupport.firePropertyChange("time", oldTime, 0f);
+                time = java.time.Duration.ZERO;
+                propertyChangeSupport.firePropertyChange("time", oldTime, this.time);
                 return null;
             });
         } catch (ExecutionException e) {
@@ -397,6 +412,7 @@ public class JavaFXPlayer implements AudioPlayer {
 
     @Override
     public void setVolume(final float volume) {
+        if (volume < 0.0f || volume > 1.0f) throw new IllegalArgumentException("Volume has to be >= 0.0 and <= 1.0: " + volume);
         final float oldVolume = this.volume;
         final float oldEffectiveVolume = this.effectiveVolume;
         this.volume = volume;
@@ -408,6 +424,9 @@ public class JavaFXPlayer implements AudioPlayer {
             propertyChangeSupport.firePropertyChange("volume", oldVolume, volume);
         }
         propertyChangeSupport.firePropertyChange("effectiveVolume", oldEffectiveVolume, effectiveVolume);
+        if (this.muted && volume > 0f) {
+            setMuted(false);
+        }
     }
 
     private void applyVolume() {

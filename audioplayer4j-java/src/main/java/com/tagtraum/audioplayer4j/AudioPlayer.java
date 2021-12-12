@@ -23,6 +23,13 @@ import java.time.Duration;
 public interface AudioPlayer extends AutoCloseable {
 
     /**
+     * Default minimum delay in ms between "time" property events.
+     * 
+     * @see #getMinTimeEventDifference()
+     */
+    int DEFAULT_MIN_TIME_EVENT_DIFFERENCE = 200;
+
+    /**
      * Opens the audio resource with the given URI.
      * In order to fully exploit different capabilities of
      * different implementations, you might rather want to
@@ -79,6 +86,8 @@ public interface AudioPlayer extends AutoCloseable {
 
     /**
      * Reset playback to the beginning of the resource.
+     *
+     * @throws IllegalStateException if no resource is loaded
      */
     void reset();
 
@@ -122,8 +131,11 @@ public interface AudioPlayer extends AutoCloseable {
 
     /**
      * Set volume on a linear scale of 0.0-1.0.
+     * If this player is currently muted, it is automatically
+     * unmuted, if the new volume != 0f.
      *
      * @param volume volume
+     * @throws IllegalArgumentException if the volume is less than 0f or greater than 1f
      */
     void setVolume(float volume);
 
@@ -167,6 +179,24 @@ public interface AudioPlayer extends AutoCloseable {
     void setMuted(boolean muted);
 
     /**
+     * Minimum delay in ms between "time" property events.
+     * This is not necessarily a precise, binding value. Instead,
+     * it is treated by the implementing player class as a
+     * non-binding user-wish.
+     *
+     * @return time in milliseconds
+     */
+    int getMinTimeEventDifference();
+
+    /**
+     * Minimum delay in ms between "time" property events.
+     *
+     * @param minTimeEventDifference time in milliseconds
+     * @see #getMinTimeEventDifference()
+     */
+    void setMinTimeEventDifference(int minTimeEventDifference);
+
+    /**
      * Sets the desired audio device.
      *
      * @param audioDevice audio device
@@ -204,16 +234,48 @@ public interface AudioPlayer extends AutoCloseable {
         return (float) (Math.log10(volume == 0.0 ? 0.0001 : volume) * 20.0);
     }
 
+    /**
+     * Add a property change listener.
+     *
+     * @param propertyChangeListener listener
+     */
     void addPropertyChangeListener(PropertyChangeListener propertyChangeListener);
 
+    /**
+     * Remove a property change listener.
+     *
+     * @param propertyChangeListener listener
+     */
     void removePropertyChangeListener(PropertyChangeListener propertyChangeListener);
 
+    /**
+     * Add a property change listener for a given property.
+     *
+     * @param propertyName property name
+     * @param propertyChangeListener listener
+     */
     void addPropertyChangeListener(String propertyName, PropertyChangeListener propertyChangeListener);
 
+    /**
+     * Remove a property change listener for a given property.
+     *
+     * @param propertyName property name
+     * @param propertyChangeListener listener
+     */
     void removePropertyChangeListener(String propertyName, PropertyChangeListener propertyChangeListener);
 
+    /**
+     * Add an {@link AudioPlayerListener}.
+     *
+     * @param listener listener
+     */
     void addAudioPlayerListener(AudioPlayerListener listener);
 
+    /**
+     * Remove an {@link AudioPlayerListener}.
+     *
+     * @param listener listener
+     */
     void removeAudioPlayerListener(AudioPlayerListener listener);
 
     @Override
