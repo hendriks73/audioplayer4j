@@ -102,6 +102,34 @@ public class TestAudioPlayerFactory {
     @ParameterizedTest
     @MethodSource
     public void testOpenURI(final URI uri) throws IOException {
+        
+        // start point
+        AudioPlayerFactory.setJavaEnabled(false);
+        AudioPlayerFactory.setJavaFXEnabled(false);
+        AudioPlayerFactory.setNativeEnabled(false);
+
+        // Java
+        AudioPlayerFactory.setJavaEnabled(true);
+        try (final AudioPlayer player = AudioPlayerFactory.open(uri)) {
+            TestAudioPlayer.testOpenAudioPlayer(uri, player);
+
+        } catch (UnsupportedAudioFileException e) {
+            System.out.println("Not supported: " + e);
+        }
+        AudioPlayerFactory.setJavaEnabled(false);
+
+        // JavaFX
+        AudioPlayerFactory.setJavaFXEnabled(true);
+        try (final AudioPlayer player = AudioPlayerFactory.open(uri)) {
+            TestAudioPlayer.testOpenAudioPlayer(uri, player);
+
+        } catch (UnsupportedAudioFileException e) {
+            System.out.println("Not supported: " + e);
+        }
+        AudioPlayerFactory.setJavaFXEnabled(false);
+
+        // Native
+        AudioPlayerFactory.setNativeEnabled(true);
         try (final AudioPlayer player = AudioPlayerFactory.open(uri)) {
             TestAudioPlayer.testOpenAudioPlayer(uri, player);
 

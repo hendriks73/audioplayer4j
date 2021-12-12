@@ -155,7 +155,7 @@ public final class ExtAudioSystem {
      */
     public static AudioInputStream getAudioInputStream(final AudioFormat targetFormat, AudioInputStream sourceStream) {
         // try to stick to one XXSampledSP package for optimal performance
-        if (FF_CONVERSION.isConversionSupported(sourceStream.getFormat(), targetFormat)) {
+        if (FF_CONVERSION != null && FF_CONVERSION.isConversionSupported(sourceStream.getFormat(), targetFormat)) {
             sourceStream = FF_CONVERSION.getAudioInputStream(targetFormat, sourceStream);
         } else if (CA_CONVERSION != null && CA_CONVERSION.isConversionSupported(sourceStream.getFormat(), targetFormat)) {
             sourceStream = CA_CONVERSION.getAudioInputStream(targetFormat, sourceStream);

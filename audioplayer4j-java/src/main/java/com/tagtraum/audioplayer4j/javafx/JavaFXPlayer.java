@@ -382,7 +382,7 @@ public class JavaFXPlayer implements AudioPlayer {
         this.notifyAll();
     }
 
-    private synchronized void waitUntilReady() throws IOException {
+    private synchronized void waitUntilReady() throws UnsupportedAudioFileException, IOException {
         final long start = System.currentTimeMillis();
         while (!ready && mediaException == null && System.currentTimeMillis() - start < 5000) {
             try {
@@ -391,8 +391,14 @@ public class JavaFXPlayer implements AudioPlayer {
                 // ignore
             }
         }
-        if (mediaException != null) throw new IOException(mediaException);
-        if (!ready) throw new IOException("Timeout while trying to open song.");
+        if (mediaException != null) {
+            final UnsupportedAudioFileException e = new UnsupportedAudioFileException(mediaException.getMessage());
+            e.initCause(mediaException);
+            throw e;
+        }
+        if (!ready) {
+            throw new IOException("Timeout while trying to open song.");
+        }
     }
 
     @Override

@@ -10,10 +10,7 @@ import com.tagtraum.audioplayer4j.AudioDevice;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Line;
-import javax.sound.sampled.Mixer;
-import javax.sound.sampled.SourceDataLine;
+import javax.sound.sampled.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -54,5 +51,26 @@ public class TestMixerAudioDevice {
     private static boolean offersSourceDataLines(final Mixer mixer) {
         final Line.Info[] sourceLineInfo = mixer.getSourceLineInfo(new Line.Info(SourceDataLine.class));
         return (sourceLineInfo != null && sourceLineInfo.length > 0);
+    }
+
+    @Test
+    public void testOpenStandardLine() throws LineUnavailableException {
+        final Mixer mixer = getMixer();
+        final AudioDevice device = new MixerAudioDevice(mixer);
+        final AudioFormat cdFormat = new AudioFormat(44100f, 16, 2, true, true);
+        final DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, cdFormat);
+        final SourceDataLine line = (SourceDataLine)device.getLine(lineInfo);
+        assertNotNull(line);
+        assertEquals(cdFormat, line.getFormat());
+        line.close();
+    }
+
+    @Test
+    public void testOpenNonStandardLine() {
+        final Mixer mixer = getMixer();
+        final AudioDevice device = new MixerAudioDevice(mixer);
+        final AudioFormat weirdFormat = new AudioFormat(44101f, 17, 5, true, true);
+        final DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, weirdFormat);
+        Assertions.assertThrows(IllegalArgumentException.class, () -> device.getLine(lineInfo));
     }
 }

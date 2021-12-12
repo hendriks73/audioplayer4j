@@ -29,8 +29,65 @@ public class AudioPlayerFactory {
     private static final Cleaner CLEANER = Cleaner.create();
     private static Boolean JAVA_FX;
 
+    private static boolean nativeEnabled = true;
+    private static boolean javaEnabled = true;
+    private static boolean javaFXEnabled = true;
 
     private AudioPlayerFactory() {
+    }
+
+    /**
+     * Indicates whether a native implementation is enabled.
+     *
+     * @return true or false
+     */
+    public static boolean isNativeEnabled() {
+        return nativeEnabled;
+    }
+
+    /**
+     * Enables/disables the native implementation (if available at all).
+     *
+     * @param nativeEnabled true or false
+     */
+    public static void setNativeEnabled(final boolean nativeEnabled) {
+        AudioPlayerFactory.nativeEnabled = nativeEnabled;
+    }
+
+    /**
+     * Indicates whether a Java-based implementation is enabled.
+     *
+     * @return true or false
+     */
+    public static boolean isJavaEnabled() {
+        return javaEnabled;
+    }
+
+    /**
+     * Enables/disables the Java-based implementation.
+     *
+     * @param javaEnabled true or false
+     */
+    public static void setJavaEnabled(final boolean javaEnabled) {
+        AudioPlayerFactory.javaEnabled = javaEnabled;
+    }
+
+    /**
+     * Indicates whether a JavaFX-based implementation is enabled.
+     *
+     * @return true or false
+     */
+    public static boolean isJavaFXEnabled() {
+        return javaFXEnabled;
+    }
+
+    /**
+     * Enables/disables the JavaFX-based implementation (if available at all).
+     *
+     * @param javaFXEnabled true or false
+     */
+    public static void setJavaFXEnabled(final boolean javaFXEnabled) {
+        AudioPlayerFactory.javaFXEnabled = javaFXEnabled;
     }
 
     /**
@@ -57,11 +114,11 @@ public class AudioPlayerFactory {
      * @see #open(URI)
      */
     public static AudioPlayer open(final URI uri, final AudioDevice audioDevice) throws IOException, UnsupportedAudioFileException {
-        Exception lastException;
+        Exception lastException = null;
 
         // prefer AVFoundationPlayer on macOS, because it probably
         // uses the least system resources
-        if (MAC) {
+        if (MAC && isNativeEnabled()) {
             try {
                 final AudioPlayer audioPlayer = new AVFoundationPlayer(CLEANER);
                 if (audioDevice != null) {
@@ -71,24 +128,27 @@ public class AudioPlayerFactory {
                 return audioPlayer;
             } catch (Exception e) {
                 LOG.log(Level.INFO, "Failed to open with " + AVFoundationPlayer.class.getSimpleName() + ": " + uri, e);
+                lastException = e;
             }
         }
 
         // Java is always available, but can it play the desired resource?
-        try {
-            final AudioPlayer audioPlayer = new JavaPlayer(CLEANER);
-            if (audioDevice != null) {
-                audioPlayer.setAudioDevice(audioDevice);
+        if (isJavaEnabled()) {
+            try {
+                final AudioPlayer audioPlayer = new JavaPlayer(CLEANER);
+                if (audioDevice != null) {
+                    audioPlayer.setAudioDevice(audioDevice);
+                }
+                audioPlayer.open(uri);
+                return audioPlayer;
+            } catch (Exception e) {
+                LOG.log(Level.INFO, "Failed to open with " + JavaPlayer.class.getSimpleName() + ": " + uri, e);
+                lastException = e;
             }
-            audioPlayer.open(uri);
-            return audioPlayer;
-        } catch (Exception e) {
-            LOG.log(Level.INFO, "Failed to open with " + JavaPlayer.class.getSimpleName() + ": " + uri, e);
-            lastException = e;
         }
 
         // last fallback, if JavaFX is available
-        if (isJavaFXAvailable()) {
+        if (isJavaFXEnabled() && isJavaFXAvailable()) {
             try {
                 final AudioPlayer audioPlayer = new JavaFXPlayer();
                 if (audioDevice != null) {
@@ -106,7 +166,8 @@ public class AudioPlayerFactory {
             throw (UnsupportedAudioFileException) lastException;
         } else if (lastException instanceof IOException) {
             throw (IOException) lastException;
-        } else throw (RuntimeException) lastException;
+        } else if (lastException != null) throw (RuntimeException) lastException;
+        return null;
     }
 
     /**
