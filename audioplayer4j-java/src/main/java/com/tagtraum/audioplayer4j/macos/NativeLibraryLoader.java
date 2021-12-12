@@ -73,8 +73,8 @@ public final class NativeLibraryLoader {
     public static synchronized void loadLibrary(final String libName, final Class<?> baseClass) {
         final String key = libName + "|" + baseClass.getName();
         if (LOADED.contains(key)) return;
-        final String packagedNativeLib = libName + "-" + "0.9.0-SNAPSHOT" + NATIVE_LIBRARY_EXTENSION;
-//        final String packagedNativeLib = libName + "-" + VERSION + NATIVE_LIBRARY_EXTENSION;
+//        final String packagedNativeLib = libName + "-" + "0.9.0-SNAPSHOT" + NATIVE_LIBRARY_EXTENSION;
+        final String packagedNativeLib = libName + "-" + VERSION + NATIVE_LIBRARY_EXTENSION;
         final Path extractedNativeLib = Paths.get(System.getProperty("java.io.tmpdir") + "/" + packagedNativeLib);
         if (Files.notExists(extractedNativeLib)) {
             extractResourceToFile(baseClass, "/" + packagedNativeLib, extractedNativeLib);
