@@ -25,11 +25,15 @@ public class TestAudioDevices {
 
     @Test
     public void testListener() {
-        final AudioDevicesListener audioDevicesListener = (oldDevices, currentDevices) -> {};
+        final AudioDevicesListener audioDevicesListener0 = (oldDevices, currentDevices) -> {};
+        final AudioDevicesListener audioDevicesListener1 = (oldDevices, currentDevices) -> {};
         assertFalse(AudioDevices.isWatching());
-        AudioDevices.addAudioDevicesListener(audioDevicesListener);
+        AudioDevices.addAudioDevicesListener(audioDevicesListener0);
         assertTrue(AudioDevices.isWatching());
-        AudioDevices.removeAudioDevicesListener(audioDevicesListener);
+        AudioDevices.addAudioDevicesListener(audioDevicesListener1);
+        AudioDevices.removeAudioDevicesListener(audioDevicesListener0);
+        assertTrue(AudioDevices.isWatching());
+        AudioDevices.removeAudioDevicesListener(audioDevicesListener1);
         assertFalse(AudioDevices.isWatching());
     }
 
