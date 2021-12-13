@@ -51,17 +51,29 @@ public class MixerAudioDevice implements AudioDevice {
         if (!mixer.isLineSupported(info)) {
             LOG.warning("Attempt to get an unsupported line from a mixer: " + info + ", " + mixer + " (" + getName() + ")");
         }
+
+        logLineStats(info);
+        return mixer.getLine(info);
+    }
+
+    /**
+     * Log info about how many lines are open and how many lines may be opened.
+     *
+     * @param info line info
+     */
+    private void logLineStats(final Line.Info info) {
         final int maxLines = mixer.getMaxLines(info);
         int matchingOpenLines = 0;
         for (final Line line : mixer.getSourceLines()) {
             if (line.isOpen() && line.getLineInfo().matches(info)) matchingOpenLines++;
         }
-        if (LOG.isLoggable(Level.FINE)) LOG.fine("Open lines for " + info + " on " + getName()
-            + ": " + matchingOpenLines + "/" + maxLines);
+        if (LOG.isLoggable(Level.FINE)) {
+            LOG.fine("Open lines for " + info + " on " + getName()
+                + ": " + matchingOpenLines + "/" + maxLines);
+        }
         if (maxLines > 0 && matchingOpenLines == maxLines) {
             LOG.warning("No more lines for " + info + " on " + getName());
         }
-        return mixer.getLine(info);
     }
 
     @Override

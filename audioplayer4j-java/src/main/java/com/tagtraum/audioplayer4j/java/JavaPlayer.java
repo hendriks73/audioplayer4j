@@ -865,14 +865,6 @@ public class JavaPlayer implements AudioPlayer {
             else return of((long) (stream.getFrameNumber() / audioFormat.getSampleRate() * 1000000), MICROS);
         }
 
-        private Duration getBufferTime(final int diffToStreamInBytes) {
-            if (stream == null || audioFormat == null) return null;
-            else {
-                final int diffToStreamInFrames = diffToStreamInBytes / audioFormat.getFrameSize();
-                return of((long) ((stream.getFrameNumber()-diffToStreamInFrames) / audioFormat.getSampleRate() * 1000000), MICROS);
-            }
-        }
-
         @Override
         public void run() {
             markLineTimeDiff(getStreamTime());
@@ -929,20 +921,8 @@ public class JavaPlayer implements AudioPlayer {
                         if (LOG.isLoggable(Level.FINE)) {
                             LOG.fine("Seeking, NOT reading");
                         }
-                        // we are in seek mode
-
-                        final Duration bufferTime = getBufferTime(justRead);
-                        if (justRead > 0 && bufferTime != null && seekTime.compareTo(bufferTime) >= 0) {
-                            if (LOG.isLoggable(Level.FINE)) {
-                                LOG.fine("seekTime >= buffer(Start)Time: Skipping ahead in buffer");
-                            }
-                            final int bytesToSkip = (int)getBytesToSkip(lineFormat, seekTime, bufferTime);
-                            // we have already read audio we want to play
-                            // lets drop the parts we don't want to play
-                            System.arraycopy(buf, bytesToSkip, buf, 0, justRead- bytesToSkip);
-                            justRead = justRead - bytesToSkip;
-                            reachedSeekTime(seekTime);
-                        } else if (seekTime.compareTo(streamTime) >= 0) {
+                        // we are in seek mode - are we already past the seek point?
+                        if (seekTime.compareTo(streamTime) >= 0) {
                             // keep on reading, until we reach seekTime
                             if (LOG.isLoggable(Level.FINE)) {
                                 LOG.fine("seekTime >= streamTime: Skipping ahead in stream");
@@ -998,8 +978,18 @@ public class JavaPlayer implements AudioPlayer {
                             this.wait(100);
                         }
                     }
+                    int written = 0;
                     if (getSeekTime() == null) {
-                        writeToLine(line, buf, justRead);
+                        written = writeToLine(line, buf, justRead);
+                        if (LOG.isLoggable(Level.FINE)) {
+                            LOG.fine("End of write loop for " + justRead + " bytes. Wrote " + written + " bytes");
+                        }
+                    }
+                    if (written < justRead) {
+                        if (LOG.isLoggable(Level.FINE)) {
+                            LOG.fine("Unreading " + (justRead - written) + " bytes to stream.");
+                        }
+                        stream.unread(buf, written, justRead-written);
                     }
                 }
                 resetSeekTime();
@@ -1041,9 +1031,10 @@ public class JavaPlayer implements AudioPlayer {
          * @param line line
          * @param buf audio data buffer
          * @param length data length
+         * @return number of bytes written
          * @throws InterruptedException if the pump is stopped
          */
-        private void writeToLine(final SourceDataLine line, final byte[] buf, final int length) throws InterruptedException {
+        private int writeToLine(final SourceDataLine line, final byte[] buf, final int length) throws InterruptedException {
             final AudioFormat lineFormat = line.getFormat();
             int pos = 0;
             while (pos < length && line.isOpen()) {
@@ -1094,9 +1085,7 @@ public class JavaPlayer implements AudioPlayer {
                     }
                 }
             }
-            if (LOG.isLoggable(Level.FINE)) {
-                LOG.fine("End of write loop for " + length + " bytes. Wrote " + pos + " bytes");
-            }
+            return pos;
         }
 
         /**

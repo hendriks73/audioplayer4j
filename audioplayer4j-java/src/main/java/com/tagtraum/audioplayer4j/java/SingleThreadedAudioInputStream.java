@@ -35,7 +35,7 @@ public class SingleThreadedAudioInputStream implements AutoCloseable {
     private final ExecutorService serializer;
     private final AudioInputStream stream;
     private final AudioFormat format;
-    private final BlockingQueue<AudioChunk> bufferQueue = new LinkedBlockingQueue<>();
+    private final BlockingDeque<AudioChunk> bufferDeque = new LinkedBlockingDeque<>();
     private String originalStream;
 
     public SingleThreadedAudioInputStream(final URL url, final AudioFormat format) throws ExecutionException, InterruptedException, IOException, UnsupportedAudioFileException {
@@ -144,7 +144,7 @@ public class SingleThreadedAudioInputStream implements AutoCloseable {
     }
 
     public void seek(final Duration duration) throws IOException {
-        bufferQueue.clear();
+        bufferDeque.clear();
         try {
             final Future<Void> f = this.serializer.submit(() -> {
                 if (frameNumber.get() == 0 && duration.equals(ZERO)) {
@@ -180,20 +180,46 @@ public class SingleThreadedAudioInputStream implements AutoCloseable {
         }
     }
 
+    /**
+     * Push data back into the stream.
+     *
+     * @param buf buffer
+     * @param off offset
+     * @param length length
+     */
+    public void unread(final byte[] buf, final int off, final int length) {
+        if (length > 0) {
+            final AudioChunk chunk = new AudioChunk(buf, off, length);
+            bufferDeque.addFirst(chunk);
+            frameNumber.addAndGet(-chunk.getLength() / format.getFrameSize());
+        }
+    }
 
+    /**
+     * Attempt to fill the provided byte buffer. The actually read number
+     * of bytes is returned.
+     *
+     * @param buf buffer to be filled
+     * @return actual number of bytes that were read
+     * @throws IOException if I/O fails
+     */
     public int read(final byte[] buf) throws IOException {
         // make sure we have something to read
-        if (bufferQueue.isEmpty()) readAhead(buf.length);
+        if (bufferDeque.isEmpty()) {
+            readAhead(buf.length);
+        }
         try {
-            final AudioChunk chunk = bufferQueue.poll(15 * 1000, TimeUnit.SECONDS);
+            final AudioChunk chunk = bufferDeque.poll(15 * 1000, TimeUnit.SECONDS);
             if (chunk == null) {
-                LOG.log(Level.SEVERE, "chunk == null");
+                LOG.severe("chunk == null");
                 return -1;
             }
             if (chunk.getLength() >= 0) {
-                System.arraycopy(chunk.getBuf(), 0, buf, 0, chunk.getLength());
+                chunk.copyTo(buf);
                 // read next chunk
-                readAhead(buf.length);
+                if (bufferDeque.isEmpty()) {
+                    readAhead(buf.length);
+                }
             }
             frameNumber.addAndGet(chunk.getLength() / format.getFrameSize());
             return chunk.getLength();
@@ -208,8 +234,8 @@ public class SingleThreadedAudioInputStream implements AutoCloseable {
             try {
                 final byte[] readAheadBuffer = new byte[length];
                 final int justRead = stream.read(readAheadBuffer);
-                bufferQueue.put(new AudioChunk(justRead, readAheadBuffer));
-            } catch (IOException | InterruptedException e) {
+                bufferDeque.add(new AudioChunk(readAheadBuffer, 0, justRead));
+            } catch (IOException e) {
                 LOG.log(Level.SEVERE, e.toString(), e);
             }
             return null;
@@ -239,12 +265,17 @@ public class SingleThreadedAudioInputStream implements AutoCloseable {
     }
 
     private static class AudioChunk {
+
         private final int length;
         private final byte[] buf;
+        private final int offset;
 
-        public AudioChunk(final int length, final byte[] buf) {
+        public AudioChunk(final byte[] buf, final int offset, final int length) {
+            if (offset + length > buf.length) throw new IllegalArgumentException("AudioChunk arguments make no sense: buf.length="
+                + buf.length + ", offset=" + offset + ", length=" + length);
             this.length = length;
             this.buf = buf;
+            this.offset = offset;
         }
 
         public int getLength() {
@@ -253,6 +284,19 @@ public class SingleThreadedAudioInputStream implements AutoCloseable {
 
         public byte[] getBuf() {
             return buf;
+        }
+
+        public int getOffset() {
+            return offset;
+        }
+
+        /**
+         * Copy chunk to the given buffer starting at index 0.
+         *
+         * @param buf byte buffer
+         */
+        public void copyTo(final byte[] buf) {
+            System.arraycopy(this.buf, this.offset, buf, 0, this.length);
         }
     }
 }

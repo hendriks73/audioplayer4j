@@ -6,6 +6,7 @@
  */
 package com.tagtraum.audioplayer4j;
 
+import com.tagtraum.audioplayer4j.device.MixerAudioDevice;
 import com.tagtraum.audioplayer4j.java.JavaPlayer;
 import com.tagtraum.audioplayer4j.javafx.JavaFXPlayer;
 import com.tagtraum.audioplayer4j.macos.AVFoundationPlayer;
@@ -16,9 +17,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.sound.sampled.AudioFileFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.UnsupportedAudioFileException;
+import javax.sound.sampled.*;
 import javax.swing.*;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -53,6 +52,62 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 public class TestAudioPlayer {
 
     private static final boolean MAC = System.getProperty("os.name").toLowerCase().contains("mac");
+
+
+    @ParameterizedTest(name = "{index}: {0}")
+    @MethodSource("players")
+    public void testSwitchAudioDeviceWhilePlaying(final AudioPlayer audioPlayer) throws UnsupportedAudioFileException, IOException {
+        final URI uri = extractFile("test.wav").toUri();
+        audioPlayer.open(uri);
+        audioPlayer.play();
+
+        final MixerAudioDevice mixerDevice = new MixerAudioDevice(getMixer());
+        try {
+            audioPlayer.setAudioDevice(mixerDevice);
+        } catch(IllegalArgumentException e) {
+            if (audioPlayer instanceof JavaPlayer) {
+                fail("JavaPlayer must support device " + mixerDevice);
+            }
+            System.out.println("Device " + mixerDevice + " is not supported by player " + audioPlayer.getClass().getSimpleName());
+        }
+        assertFalse(audioPlayer.isPaused());
+        audioPlayer.close();
+    }
+
+    @ParameterizedTest(name = "{index}: {0}")
+    @MethodSource("players")
+    public void testSwitchAudioDevice(final AudioPlayer audioPlayer) throws UnsupportedAudioFileException, IOException {
+        final URI uri = extractFile("test.wav").toUri();
+        audioPlayer.open(uri);
+
+        final MixerAudioDevice mixerDevice = new MixerAudioDevice(getMixer());
+        try {
+            audioPlayer.setAudioDevice(mixerDevice);
+        } catch(IllegalArgumentException e) {
+            if (audioPlayer instanceof JavaPlayer) {
+                fail("JavaPlayer must support device " + mixerDevice);
+            }
+            System.out.println("Device " + mixerDevice + " is not supported by player " + audioPlayer.getClass().getSimpleName());
+        }
+        assertTrue(audioPlayer.isPaused());
+        audioPlayer.close();
+    }
+
+    private Mixer getMixer() {
+        final Mixer.Info[] mixerInfo = AudioSystem.getMixerInfo();
+        if (mixerInfo != null && mixerInfo.length > 0) {
+            for (final Mixer.Info mi : mixerInfo) {
+                final Mixer mixer = AudioSystem.getMixer(mi);
+                if (offersSourceDataLines(mixer)) return mixer;
+            }
+        }
+        return null;
+    }
+
+    private static boolean offersSourceDataLines(final Mixer mixer) {
+        final Line.Info[] sourceLineInfo = mixer.getSourceLineInfo(new Line.Info(SourceDataLine.class));
+        return (sourceLineInfo != null && sourceLineInfo.length > 0);
+    }
 
     @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("players")

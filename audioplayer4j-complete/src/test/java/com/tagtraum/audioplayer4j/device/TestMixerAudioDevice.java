@@ -73,4 +73,6 @@ public class TestMixerAudioDevice {
         final DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, weirdFormat);
         Assertions.assertThrows(IllegalArgumentException.class, () -> device.getLine(lineInfo));
     }
+
+
 }
