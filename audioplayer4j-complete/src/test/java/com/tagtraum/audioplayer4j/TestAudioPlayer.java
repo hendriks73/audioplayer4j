@@ -837,9 +837,13 @@ public class TestAudioPlayer {
         Thread.sleep(500);
 
         assertFalse(audioPlayer.isPaused());
+
+        final long start = System.nanoTime();
         final Duration time = audioPlayer.getTime();
-        assertTrue(time.compareTo(ofMillis(250)) >= 0);
-        assertTrue(time.compareTo(ofMillis(750)) < 0);
+        final long timeCallDuration = (System.nanoTime() - start) / 1000L;
+        System.out.println("timeCallDuration = " + timeCallDuration);
+        assertTrue(time.compareTo(ofMillis(250 + timeCallDuration/1000L)) >= 0);
+        assertTrue(time.compareTo(ofMillis(750 + timeCallDuration/1000L)) < 0);
 
         audioPlayer.close();
 
