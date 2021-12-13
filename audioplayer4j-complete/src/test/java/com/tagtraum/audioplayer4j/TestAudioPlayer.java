@@ -842,8 +842,9 @@ public class TestAudioPlayer {
         final Duration time = audioPlayer.getTime();
         final long timeCallDuration = (System.nanoTime() - start) / 1000L;
         System.out.println("timeCallDuration = " + timeCallDuration);
-        assertTrue(time.compareTo(ofMillis(250 + timeCallDuration/1000L)) >= 0);
-        assertTrue(time.compareTo(ofMillis(750 + timeCallDuration/1000L)) < 0);
+        final String name = audioPlayer.getClass().getSimpleName();
+        assertTrue(time.compareTo(ofMillis(250 + timeCallDuration/1000L)) >= 0, name + ": Time should be greater than/equal to 0.250s (+" + timeCallDuration + "micros), but isn't: " + time);
+        assertTrue(time.compareTo(ofMillis(750 + timeCallDuration/1000L)) < 0, name + ": Time should be less than to 0.750s (+" + timeCallDuration + "micros), but isn't: " + time);
 
         audioPlayer.close();
 
