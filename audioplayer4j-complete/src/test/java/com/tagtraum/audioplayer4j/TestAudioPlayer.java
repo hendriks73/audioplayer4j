@@ -243,6 +243,7 @@ public class TestAudioPlayer {
 
         // set time greater than duration
         final Duration duration = audioPlayer.getDuration();
+        assertNotNull(duration);
         assertThrows(IllegalArgumentException.class, () -> audioPlayer.setTime(duration.plus(5, SECONDS)));
 
         // set time to duration
@@ -281,7 +282,9 @@ public class TestAudioPlayer {
         final PropertyChangeEvent seekEvent3 = events.next();
         assertEquals("time", seekEvent3.getPropertyName());
         assertEquals(ofMillis(200), seekEvent3.getOldValue(), message);
-        assertEquals(duration.toMillis(), ((Duration)seekEvent3.getNewValue()).toMillis(), message);
+        final Duration newValueSeek3 = (Duration) seekEvent3.getNewValue();
+        assertNotNull(newValueSeek3, "Expected non-null value after seeking to duration=" + duration + ", but got null.");
+        assertEquals(duration.toMillis(), newValueSeek3.toMillis(), message);
 
         final PropertyChangeEvent closeEvent = events.next();
         assertEquals("time", closeEvent.getPropertyName());

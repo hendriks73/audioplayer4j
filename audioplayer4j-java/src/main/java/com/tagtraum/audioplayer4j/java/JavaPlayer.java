@@ -1119,11 +1119,13 @@ public class JavaPlayer implements AudioPlayer {
                         stream.seek(seekTime);
                         markLineTimeDiff(seekTime);
                         resetSeekTime();
+                        // force fire
+                        internalSetTime(getTime(), true);
                     } else {
                         if (LOG.isLoggable(Level.FINE)) LOG.fine("Seek not supported.");
                     }
                 } catch (IOException e) {
-                    LOG.log(Level.WARNING, "Failed to seek to time " + seekTime + "ms. We assume the stream needs to be re-opened.", e);
+                    LOG.log(Level.WARNING, "Failed to seek to time " + seekTime + ". We assume the stream needs to be re-opened.", e);
                     try {
                         JavaPlayer.this.reopen();
                     } catch (UnsupportedAudioFileException | LineUnavailableException | ExecutionException | IOException e1) {

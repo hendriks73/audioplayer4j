@@ -144,9 +144,9 @@ public class SingleThreadedAudioInputStream implements AutoCloseable {
     }
 
     public void seek(final Duration duration) throws IOException {
-        bufferDeque.clear();
         try {
             final Future<Void> f = this.serializer.submit(() -> {
+                bufferDeque.clear();
                 if (frameNumber.get() == 0 && duration.equals(ZERO)) {
                     LOG.warning("Unnecessary seek");
                     return null;

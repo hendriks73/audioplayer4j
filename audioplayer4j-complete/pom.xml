@@ -32,6 +32,18 @@
             <artifactId>javafx-graphics</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.tagtraum</groupId>
+            <artifactId>ffsampledsp-complete</artifactId>
+            <scope>test</scope>
+            <version>LATEST</version>
+        </dependency>
+        <dependency>
+            <groupId>com.tagtraum</groupId>
+            <artifactId>casampledsp-complete</artifactId>
+            <scope>test</scope>
+            <version>LATEST</version>
+        </dependency>
     </dependencies>
 
     <build>
