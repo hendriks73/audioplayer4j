@@ -59,6 +59,17 @@ public interface AudioPlayer extends AutoCloseable {
     void play() throws IllegalStateException;
 
     /**
+     * Load and start playback of the given resource.
+     *
+     * @throws UnsupportedAudioFileException if the URI does not describe
+     *  a playable audio resource
+     * @throws IOException if the URI cannot be accessed due to IO problems
+     */
+    static void play(final URI uri) throws UnsupportedAudioFileException, IOException {
+        AudioPlayerFactory.open(uri).play();
+    }
+
+    /**
      * Pause playback of the loaded resource.
      *
      * @throws IllegalStateException if no resource is loaded

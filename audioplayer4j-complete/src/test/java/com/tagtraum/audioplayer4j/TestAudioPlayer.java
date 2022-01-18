@@ -53,6 +53,11 @@ public class TestAudioPlayer {
 
     private static final boolean MAC = System.getProperty("os.name").toLowerCase().contains("mac");
 
+    @Test
+    public void testJustPlay() throws UnsupportedAudioFileException, IOException {
+        final URI uri = extractFile("test.wav").toUri();
+        AudioPlayer.play(uri);
+    }
 
     @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("players")

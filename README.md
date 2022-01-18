@@ -22,7 +22,69 @@ You can install it using the following dependency:
 </dependencies>
 ```
 
-## Using javax.sound.sampled Packages 
+Without further packages, *audioplayer4j* works very well on macOS and,
+but has only mediocre codec (audio format) support on other platforms.
+That said, *audioplayer4j* plays very well with others. You can
+play a wide variety for audio formats by installing a suitable
+javax.sound.sampled package or JavaFX modules. For details, please see
+below.
+
+## Usage
+
+To playback an audio file, simply call the `AudioPlayer`'s `play(uri)`
+method:
+
+```java
+AudioPlayer.play(someURI);
+```
+
+Playback will start asynchronously.
+
+Here's a more comprehensive example: 
+
+```java
+import com.tagtraum.audioplayer4j.*;
+import java.util.concurrent.CountDownLatch;
+import java.net.URI;
+
+public class AudioplayerExample {
+    
+    public static void main(final String[] args) throws Exception {
+        
+        // open a player object for the given URI
+        // do so, with try-resource management        
+        try (final AudioPlayer player = AudioPlayerFactory.open(new URI(args[0]))) {
+
+            // add a listener, so that we are notified,
+            // once playback has stopped.            
+            final CountDownLatch finished = new CountDownLatch(1);
+            player.addAudioPlayerListener(new AudioPlayerListener() {
+                @Override
+                public void started(final AudioPlayer audioPlayer, final URI uri) {
+                }
+
+                @Override
+                public void finished(final AudioPlayer audioPlayer, final URI uri) {
+                    finished.countDown();
+                }
+            });
+
+            // start playback        
+            player.play();
+            
+            // wait until playback has finished.        
+            finished.await();
+        }
+    }
+}
+```
+
+If you'd like to be notified about playback process, pause events etc.,
+just add a corresponding `PropertyListener`. Note that all events are
+posted on the event dispatch thread (EDT).
+
+
+## Leveraging javax.sound.sampled Packages 
                                      
 The Java sampled sound API uses a service provider architecture, which can be implemented
 by third parties (see [javax.sound.sampled.spi](https://docs.oracle.com/en/java/javase/17/docs/api/java.desktop/javax/sound/sampled/spi/package-summary.html)).
@@ -33,7 +95,7 @@ Examples are:
 - [FFSampledSP](https://github.com/hendriks73/ffsampledsp), an FFmpeg based provider (Ubuntu, macOS, Windows)
 - [CASampledSP](https://github.com/hendriks73/casampledsp), a Core Audio-based provider (macOS only)
 
-To add *FFSampledSP*, simply use this dependency:
+For example, to add *FFSampledSP*, simply use this dependency:
 
 ```xml
 <dependencies>
