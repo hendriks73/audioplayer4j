@@ -280,6 +280,10 @@ public class JavaPlayer implements AudioPlayer {
 
     private void reopen() throws InterruptedException, UnsupportedAudioFileException, LineUnavailableException, ExecutionException, IOException {
         if (LOG.isLoggable(Level.FINE)) LOG.fine("Re-opening " + song);
+        final boolean startPump = streamLinePump != null && streamLinePump.isRunning();
+        if (this.streamLinePump != null) {
+            this.streamLinePump.stop();
+        }
         // empty current line
         if (line != null && line.isOpen()) {
             line.flush();
@@ -299,6 +303,9 @@ public class JavaPlayer implements AudioPlayer {
         open(url);
         this.streamLinePump = new StreamLinePump(stream, line);
         this.serializer.submit(streamLinePump);
+        if (startPump) {
+            this.streamLinePump.start();
+        }
     }
 
     private void open(final URL url) throws UnsupportedAudioFileException, IOException, ExecutionException, InterruptedException {
