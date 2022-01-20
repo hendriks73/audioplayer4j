@@ -31,7 +31,7 @@ below.
 
 ## Usage
 
-To playback an audio file, simply call the
+To play an audio file, simply call the
 [AudioPlayer's](https://hendriks73.github.io/audioplayer4j/tagtraum.audioplayer4j/com/tagtraum/audioplayer4j/AudioPlayer.html)
 [play(uri)](https://hendriks73.github.io/audioplayer4j/tagtraum.audioplayer4j/com/tagtraum/audioplayer4j/AudioPlayer.html#play(java.net.URI))
 method:

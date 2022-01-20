@@ -18,7 +18,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * {@link AudioPlayer} factory.
+ * Factory for {@link AudioPlayer} instances.
+ * To get an instance, use {@link AudioPlayerFactory#open(URI)} or,
+ * if playback on a specific {@link AudioDevice} is desired,
+ * use {@link AudioPlayerFactory#open(URI, AudioDevice)}.<br>
+ * 
+ * You may disable certain implementations by calling
+ * {@link #setJavaEnabled(boolean)}, {@link #setJavaFXEnabled(boolean)},
+ * or {@link #setNativeEnabled(boolean)}.
  *
  * @author <a href="mailto:hs@tagtraum.com">Hendrik Schreiber</a>
  */

@@ -13,8 +13,15 @@ import java.net.URI;
 import java.time.Duration;
 
 /**
- * Audio player.
+ * Audio player.<br>
  *
+ * The easiest wat to start playing audio is:
+ * <pre>
+ * AudioPlayer.play(someURI);
+ * </pre>
+ *
+ * For more comprehensive scenarios, obtain an {@code AudioPlayer} instance
+ * via {@link AudioPlayerFactory#open(URI)}.
  * The player's state may be observed via {@link PropertyChangeListener}s,
  * the played resource via an {@link AudioPlayerListener}.
  *
@@ -236,7 +243,7 @@ public interface AudioPlayer extends AutoCloseable {
     }
 
     /**
-     * Convert linear volume to db gain.
+     * Convert linear volume to dB gain.
      *
      * @param volume linear volume
      * @return gain in dB
