@@ -7,27 +7,7 @@
 # audioplayer4j
 
 Simply plays audio.
-
-## Installation
-
-*audioplayer4j* is released via [Maven](https://maven.apache.org).
-You can install it using the following dependency:
-
-```xml
-<dependencies>
-    <dependency>
-        <groupId>com.tagtraum</groupId>
-        <artifactId>audioplayer4j-complete</artifactId>
-    </dependency>
-</dependencies>
-```
-
-Without further packages, *audioplayer4j* works very well on macOS and,
-but has only mediocre codec (audio format) support on other platforms.
-That said, *audioplayer4j* plays very well with others. You can
-play a wide variety for audio formats by installing a suitable
-javax.sound.sampled package or JavaFX modules. For details, please see
-below.
+                
 
 ## Usage
 
@@ -43,7 +23,7 @@ AudioPlayer.play(someURI);
 Playback will start asynchronously.
 
 Here's a more comprehensive example, using the
-[AudioPlayerFactory](https://hendriks73.github.io/audioplayer4j/tagtraum.audioplayer4j/com/tagtraum/audioplayer4j/AudioPlayerFactory.html): 
+[AudioPlayerFactory](https://hendriks73.github.io/audioplayer4j/tagtraum.audioplayer4j/com/tagtraum/audioplayer4j/AudioPlayerFactory.html):
 
 ```java
 import com.tagtraum.audioplayer4j.*;
@@ -86,6 +66,27 @@ If you'd like to be notified about playback process, pause events etc.,
 just add a corresponding `PropertyListener`. Note that all events are
 posted on the event dispatch thread (EDT).
 
+
+## Installation
+
+*audioplayer4j* is released via [Maven](https://maven.apache.org).
+You can install it using the following dependency:
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>com.tagtraum</groupId>
+        <artifactId>audioplayer4j-complete</artifactId>
+    </dependency>
+</dependencies>
+```
+
+Without further packages, *audioplayer4j* works very well on macOS and,
+but has only mediocre codec (audio format) support on other platforms.
+That said, *audioplayer4j* plays very well with others. You can
+play a wide variety of audio formats by installing a suitable
+`javax.sound.sampled` package or JavaFX modules.
+For details, please see below.
 
 ## Leveraging javax.sound.sampled Packages 
                                      
