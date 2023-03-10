@@ -82,6 +82,7 @@ public class JavaPlayer implements AudioPlayer {
     private Duration seekTime = null;
     private Duration time = null;
     private boolean muted;
+    private boolean endOfMedia;
     private boolean unstarted;
     private boolean unfinished;
     private AudioDevice audioDevice = DefaultAudioDevice.getInstance();
@@ -227,6 +228,7 @@ public class JavaPlayer implements AudioPlayer {
             internalSetTime(ZERO, false);
             this.streamLinePump = new StreamLinePump(stream, line);
             this.serializer.submit(streamLinePump);
+            this.endOfMedia = false;
             this.unstarted = true;
             this.unfinished = true;
             this.song = song;
@@ -254,7 +256,7 @@ public class JavaPlayer implements AudioPlayer {
         } finally {
             firePropertyChange("uri", oldSong, this.song);
             firePropertyChange("duration", oldDuration, this.duration);
-            propertyChangeSupport.firePropertyChange("paused", oldPaused, this.paused);
+            this.propertyChangeSupport.firePropertyChange("paused", oldPaused, this.paused);
         }
     }
 
@@ -437,7 +439,7 @@ public class JavaPlayer implements AudioPlayer {
         this.paused = true;
         if (LOG.isLoggable(Level.FINE)) LOG.fine("pause(): line.stop()");
         this.streamLinePump.stop();
-        propertyChangeSupport.firePropertyChange("paused", oldPaused, paused);
+        this.propertyChangeSupport.firePropertyChange("paused", oldPaused, paused);
     }
 
     @Override
@@ -450,7 +452,7 @@ public class JavaPlayer implements AudioPlayer {
         this.paused = true;
         firePropertyChange("uri", oldSong, this.song);
         firePropertyChange("duration", oldDuration, this.duration);
-        propertyChangeSupport.firePropertyChange("paused", oldPaused, this.paused);
+        this.propertyChangeSupport.firePropertyChange("paused", oldPaused, this.paused);
     }
 
     /**
@@ -513,8 +515,8 @@ public class JavaPlayer implements AudioPlayer {
         } else {
             updateEffectiveVolumeWithoutLine();
         }
-        propertyChangeSupport.firePropertyChange("volume", oldVolume, volume);
-        propertyChangeSupport.firePropertyChange("effectiveVolume", oldEffectiveVolume, effectiveVolume);
+        this.propertyChangeSupport.firePropertyChange("volume", oldVolume, volume);
+        this.propertyChangeSupport.firePropertyChange("effectiveVolume", oldEffectiveVolume, effectiveVolume);
     }
 
     private void updateEffectiveVolumeWithoutLine() {
@@ -538,8 +540,8 @@ public class JavaPlayer implements AudioPlayer {
         } else {
             updateEffectiveVolumeWithoutLine();
         }
-        propertyChangeSupport.firePropertyChange("gain", oldGain, gain);
-        propertyChangeSupport.firePropertyChange("effectiveVolume", oldEffectiveVolume, effectiveVolume);
+        this.propertyChangeSupport.firePropertyChange("gain", oldGain, gain);
+        this.propertyChangeSupport.firePropertyChange("effectiveVolume", oldEffectiveVolume, effectiveVolume);
     }
 
     @Override
@@ -561,7 +563,7 @@ public class JavaPlayer implements AudioPlayer {
         } else {
             updateEffectiveVolumeWithoutLine();
         }
-        propertyChangeSupport.firePropertyChange("muted", oldMuted, muted);
+        this.propertyChangeSupport.firePropertyChange("muted", oldMuted, muted);
     }
 
     @Override
@@ -687,7 +689,7 @@ public class JavaPlayer implements AudioPlayer {
             final URI s = song;
             SwingUtilities.invokeLater(() -> {
                 for (final AudioPlayerListener listener : audioPlayerListeners) {
-                    listener.finished(JavaPlayer.this, s);
+                    listener.finished(JavaPlayer.this, s, this.endOfMedia);
                 }
             });
         }
@@ -696,28 +698,28 @@ public class JavaPlayer implements AudioPlayer {
     private void firePropertyChange(String propertyName, Object oldValue, Object newValue) {
         // do not fire, if both are null
         if (oldValue != null || newValue != null) {
-            propertyChangeSupport.firePropertyChange(propertyName, oldValue, newValue);
+            this.propertyChangeSupport.firePropertyChange(propertyName, oldValue, newValue);
         }
     }
 
     @Override
     public void addPropertyChangeListener(final PropertyChangeListener propertyChangeListener) {
-        propertyChangeSupport.addPropertyChangeListener(propertyChangeListener);
+        this.propertyChangeSupport.addPropertyChangeListener(propertyChangeListener);
     }
 
     @Override
     public void removePropertyChangeListener(final PropertyChangeListener propertyChangeListener) {
-        propertyChangeSupport.removePropertyChangeListener(propertyChangeListener);
+        this.propertyChangeSupport.removePropertyChangeListener(propertyChangeListener);
     }
 
     @Override
     public void addPropertyChangeListener(final String propertyName, final PropertyChangeListener propertyChangeListener) {
-        propertyChangeSupport.addPropertyChangeListener(propertyName, propertyChangeListener);
+        this.propertyChangeSupport.addPropertyChangeListener(propertyName, propertyChangeListener);
     }
 
     @Override
     public void removePropertyChangeListener(final String propertyName, final PropertyChangeListener propertyChangeListener) {
-        propertyChangeSupport.removePropertyChangeListener(propertyName, propertyChangeListener);
+        this.propertyChangeSupport.removePropertyChangeListener(propertyName, propertyChangeListener);
     }
 
     @Override
@@ -882,7 +884,7 @@ public class JavaPlayer implements AudioPlayer {
                 LOG.fine("Required buffer size for 10s: " + (bytesPerSecond*10));
             }
             final byte[] buf = new byte[10 * bytesPerSecond];
-            int justRead = 0;
+            int justRead;
             try {
                 while (line.isOpen()) {
                     // if (isStopped()) throw new InterruptedException("Stopping " + this);
@@ -914,6 +916,7 @@ public class JavaPlayer implements AudioPlayer {
                                 }
                                 line.drain();
                                 // if (isStopped()) throw new InterruptedException("Stopping " + this);
+                                JavaPlayer.this.endOfMedia = true;
                                 quietClose();
                                 break;
                             } else {

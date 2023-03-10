@@ -67,6 +67,7 @@ public class AVFoundationPlayer implements AudioPlayer {
     private Duration time;
     private float gain = 0;
     private URI songURI;
+    private boolean endOfMedia;
     private boolean unstarted;
     private boolean unfinished;
     private int minTimeEventDifference = DEFAULT_MIN_TIME_EVENT_DIFFERENCE;
@@ -170,6 +171,7 @@ public class AVFoundationPlayer implements AudioPlayer {
                 openWithCleaner(url);
                 if (LOG.isLoggable(Level.FINE)) LOG.fine("Time to open " + url + ": " + (System.currentTimeMillis()-openStart) + "ms");
 
+                this.endOfMedia = false;
                 this.unstarted = true;
                 this.unfinished = true;
 
@@ -644,6 +646,7 @@ public class AVFoundationPlayer implements AudioPlayer {
     private void didPlayToEndTime() {
         // called from native
         if (LOG.isLoggable(Level.FINE)) LOG.fine("Native callback \"didPlayToEndTime\"");
+        this.endOfMedia = true;
         fireFinished();
     }
 
@@ -706,7 +709,7 @@ public class AVFoundationPlayer implements AudioPlayer {
             final URI s = songURI;
             SwingUtilities.invokeLater(() -> {
                 for (final AudioPlayerListener listener : audioPlayerListeners) {
-                    listener.finished(AVFoundationPlayer.this, s);
+                    listener.finished(AVFoundationPlayer.this, s, this.endOfMedia);
                 }
             });
         }

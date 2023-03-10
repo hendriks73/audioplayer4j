@@ -47,7 +47,7 @@ public class AudioplayerExample {
                 }
 
                 @Override
-                public void finished(final AudioPlayer audioPlayer, final URI uri) {
+                public void finished(final AudioPlayer audioPlayer, final URI uri, final boolean endOfMedia) {
                     finished.countDown();
                 }
             });

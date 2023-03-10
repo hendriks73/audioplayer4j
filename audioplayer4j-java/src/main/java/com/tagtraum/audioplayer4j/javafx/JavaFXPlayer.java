@@ -82,6 +82,7 @@ public class JavaFXPlayer implements AudioPlayer {
     private boolean unfinished;
 
     private MediaException mediaException;
+    private boolean endOfMedia;
 
     public JavaFXPlayer() {
         initJavaFX();
@@ -186,6 +187,7 @@ public class JavaFXPlayer implements AudioPlayer {
                     player.dispose();
                     player = null;
                 }
+                endOfMedia = false;
                 unstarted = true;
                 unfinished = true;
                 setReady(false);
@@ -193,7 +195,7 @@ public class JavaFXPlayer implements AudioPlayer {
                 player = new MediaPlayer(media);
                 applyVolume();
                 player.setMute(muted);
-                player.setOnEndOfMedia(this::close);
+                player.setOnEndOfMedia(this::closeOnEndOfMedia);
                 player.setOnReady(() -> setReady(true));
                 player.setOnError(() -> setReady(player.getError()));
                 player.setOnPaused(() -> {
@@ -275,6 +277,12 @@ public class JavaFXPlayer implements AudioPlayer {
         else pause();
     }
 
+
+    private void closeOnEndOfMedia() {
+        this.endOfMedia = true;
+        this.close();
+    }
+
     @Override
     public void close() {
         if (player == null) {
@@ -301,10 +309,10 @@ public class JavaFXPlayer implements AudioPlayer {
         this.song = null;
         this.duration = null;
         this.paused = true;
-        propertyChangeSupport.firePropertyChange("uri", oldSong, this.song);
-        propertyChangeSupport.firePropertyChange("duration", oldDuration, this.duration);
-        propertyChangeSupport.firePropertyChange("time", oldTime, this.time);
-        propertyChangeSupport.firePropertyChange("paused", oldPaused, this.paused);
+        this.propertyChangeSupport.firePropertyChange("uri", oldSong, this.song);
+        this.propertyChangeSupport.firePropertyChange("duration", oldDuration, this.duration);
+        this.propertyChangeSupport.firePropertyChange("time", oldTime, this.time);
+        this.propertyChangeSupport.firePropertyChange("paused", oldPaused, this.paused);
     }
 
     @Override
@@ -529,7 +537,7 @@ public class JavaFXPlayer implements AudioPlayer {
             final URI s = song;
             SwingUtilities.invokeLater(() -> {
                 for (final AudioPlayerListener listener : audioPlayerListeners) {
-                    listener.finished(JavaFXPlayer.this, s);
+                    listener.finished(JavaFXPlayer.this, s, this.endOfMedia);
                 }
             });
         }

@@ -9,7 +9,7 @@ package com.tagtraum.audioplayer4j;
 import java.net.URI;
 
 /**
- * Listener for {@link AudioPlayer} events.
+ * Listener for {@link AudioPlayer} start and finish events.
  *
  * @author <a href="mailto:hs@tagtraum.com">Hendrik Schreiber</a>
  */
@@ -30,8 +30,9 @@ public interface AudioPlayerListener {
      * may simply have been closed.
      *
      * @param audioPlayer player that plays the resource
-     * @param uri URI describing the audio resources
+     * @param uri         URI describing the audio resources
+     * @param endOfMedia  indicates whether the resource has been played until the end
      */
-    void finished(AudioPlayer audioPlayer, URI uri);
+    void finished(AudioPlayer audioPlayer, URI uri, boolean endOfMedia);
 
 }

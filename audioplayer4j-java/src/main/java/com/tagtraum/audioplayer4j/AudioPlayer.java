@@ -15,7 +15,7 @@ import java.time.Duration;
 /**
  * Audio player.<br>
  *
- * The easiest wat to start playing audio is:
+ * The easiest way to start playing audio is:
  * <pre>
  * AudioPlayer.play(someURI);
  * </pre>
