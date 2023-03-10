@@ -100,7 +100,7 @@ public class TestAudioPlayer {
 
     private Mixer getMixer() {
         final Mixer.Info[] mixerInfo = AudioSystem.getMixerInfo();
-        if (mixerInfo != null && mixerInfo.length > 0) {
+        if (mixerInfo != null) {
             for (final Mixer.Info mi : mixerInfo) {
                 final Mixer mixer = AudioSystem.getMixer(mi);
                 if (offersSourceDataLines(mixer)) return mixer;
@@ -320,7 +320,7 @@ public class TestAudioPlayer {
             }
 
             @Override
-            public void finished(final AudioPlayer audioPlayer, final URI uri) {
+            public void finished(final AudioPlayer audioPlayer, final URI uri, final boolean endOfMedia) {
 
             }
         });
@@ -451,8 +451,8 @@ public class TestAudioPlayer {
         final MemoryPropertyChangeListener mutedListener = new MemoryPropertyChangeListener();
         audioPlayer.addPropertyChangeListener("muted", mutedListener);
 
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {audioPlayer.setVolume(-1f);});
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {audioPlayer.setVolume(1.0001f);});
+        Assertions.assertThrows(IllegalArgumentException.class, () -> audioPlayer.setVolume(-1f));
+        Assertions.assertThrows(IllegalArgumentException.class, () -> audioPlayer.setVolume(1.0001f));
 
         final URI uri = extractFile("test.wav").toUri();
         assertEquals(1f, audioPlayer.getVolume());
@@ -715,7 +715,7 @@ public class TestAudioPlayer {
         final Iterator<String> iterator = listener.getEvents().iterator();
 
         assertEquals("started", iterator.next());
-        assertEquals("finished", iterator.next());
+        assertEquals("finished-false", iterator.next());
 
         assertFalse(iterator.hasNext());
     }
@@ -742,7 +742,7 @@ public class TestAudioPlayer {
         final Iterator<String> iterator = listener.getEvents().iterator();
 
         assertEquals("started", iterator.next());
-        assertEquals("finished", iterator.next());
+        assertEquals("finished-true", iterator.next());
 
         assertFalse(iterator.hasNext());
 
@@ -863,7 +863,7 @@ public class TestAudioPlayer {
         final Iterator<String> iterator = listener.getEvents().iterator();
 
         assertEquals("started", iterator.next());
-        assertEquals("finished", iterator.next());
+        assertEquals("finished-false", iterator.next());
 
         assertFalse(iterator.hasNext());
     }
@@ -934,8 +934,8 @@ public class TestAudioPlayer {
         }
 
         @Override
-        public void finished(final AudioPlayer audioPlayer, final URI uri) {
-            events.add("finished");
+        public void finished(final AudioPlayer audioPlayer, final URI uri, final boolean endOfMedia) {
+            events.add("finished-" + endOfMedia);
         }
 
         public List<String> getEvents() {
