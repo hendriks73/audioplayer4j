@@ -297,6 +297,6 @@ public interface AudioPlayer extends AutoCloseable {
     void removeAudioPlayerListener(AudioPlayerListener listener);
 
     @Override
-    void close() throws IOException;
+    void close();
 
 }
