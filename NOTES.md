@@ -1,3 +1,7 @@
+- 0.9.3
+  - Removed `throws IOException` from `close` method
+
+
 - 0.9.2
   - Added `endOfMedia` parameter to finished event call
 
