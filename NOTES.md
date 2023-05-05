@@ -1,3 +1,7 @@
+- 0.9.4
+  - Ensured v3.1.0 of ant run plugin to fix macOS signature issue
+
+
 - 0.9.3
   - Removed `throws IOException` from `close` method
 
