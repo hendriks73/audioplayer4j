@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.tagtraum</groupId>
         <artifactId>audioplayer4j</artifactId>
-        <version>0.9.5-SNAPSHOT</version>
+        <version>0.9.4-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>audioplayer4j-java</artifactId>

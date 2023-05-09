@@ -18,7 +18,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ macos-10.15, macos-latest ]
+        os: [ macos-11, macos-12, macos-latest ]
         java: [ '11', '15', '17' ]
 
     steps:
@@ -80,7 +80,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-18.04 ]
+        os: [ ubuntu-20.04, ubuntu-latest ]
         java: [ '11', '15', '17' ]
 
     steps:
