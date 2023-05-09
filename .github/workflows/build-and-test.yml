@@ -80,7 +80,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-20.04 ]
+        os: [ ubuntu-20.04, ubuntu-latest ]
         java: [ '11', '15', '17' ]
 
     steps:
@@ -102,7 +102,7 @@ jobs:
       - name: Build/test code with Maven
         run: |
           # attempt to restart pulseaudio 
-          sudo touch /usr/share/pipewire/media-session.d/with-pulseaudio
+          # sudo touch /usr/share/pipewire/media-session.d/with-pulseaudio
           systemctl --user restart pipewire-session-manager
           xvfb-run -a mvn --no-transfer-progress --batch-mode --file pom.xml install
           # xvfb-run -a mvn --no-transfer-progress --batch-mode --file pom.xml install -Dmaven.test.skip=true
