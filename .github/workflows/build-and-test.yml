@@ -80,7 +80,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-20.04, ubuntu-latest ]
+        os: [ ubuntu-20.04 ]
         java: [ '11', '15', '17' ]
 
     steps:
