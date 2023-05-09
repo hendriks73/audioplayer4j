@@ -101,6 +101,8 @@ jobs:
 
       - name: Build/test code with Maven
         run: |
+          sudo touch /usr/share/pipewire/media-session.d/with-pulseaudio
+          systemctl --user restart pipewire-session-manager
           xvfb-run -a mvn --no-transfer-progress --batch-mode --file pom.xml install
           # xvfb-run -a mvn --no-transfer-progress --batch-mode --file pom.xml install -Dmaven.test.skip=true
           # xvfb-run -a mvn --no-transfer-progress --batch-mode --file audioplayer4j-complete/pom.xml install -Dtest=TestAudioPlayer#repeatedTestTimeForFileWhilePlaying,TestAudioPlayer#lineFlushTest
