@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 
 import javax.sound.sampled.*;
 
+import java.util.Arrays;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -45,6 +47,8 @@ public class TestMixerAudioDevice {
                 if (offersSourceDataLines(mixer)) return mixer;
             }
         }
+        fail("Failed to obtain mixer from AudioSystem that offers SourceDataLines. " +
+            "MixerInfo: " + Arrays.toString(AudioSystem.getMixerInfo()));
         return null;
     }
 
