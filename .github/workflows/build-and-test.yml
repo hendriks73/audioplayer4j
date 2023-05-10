@@ -109,6 +109,8 @@ jobs:
           # ALSA tools, list devices
           # aplay --list-devices
           # PulseAudio tools, list nodes
+          pactl list
+          pactl list short sinks
           pactl list | grep node.name
           # PulseAudio tools, list sinks
           pactl list short sinks
