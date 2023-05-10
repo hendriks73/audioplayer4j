@@ -91,7 +91,7 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y pulseaudio jackd2 alsa-utils alsa-base dbus-x11
           sudo adduser $USER audio
-          systemctl restart pulseaudio 
+          sudo systemctl restart pulseaudio 
 
       - name: Set up Java
         uses: actions/setup-java@v2
