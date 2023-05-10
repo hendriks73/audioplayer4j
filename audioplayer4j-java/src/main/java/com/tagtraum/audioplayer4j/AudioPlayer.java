@@ -68,12 +68,17 @@ public interface AudioPlayer extends AutoCloseable {
     /**
      * Load and start playback of the given resource.
      *
+     * @param uri URI for the resource that should be played.
+     * @return the used {@link AudioPlayer} object, which should be closed
+     *  after the resource has been played
      * @throws UnsupportedAudioFileException if the URI does not describe
      *  a playable audio resource
      * @throws IOException if the URI cannot be accessed due to IO problems
      */
-    static void play(final URI uri) throws UnsupportedAudioFileException, IOException {
-        AudioPlayerFactory.open(uri).play();
+    static AudioPlayer play(final URI uri) throws UnsupportedAudioFileException, IOException {
+        final AudioPlayer audioPlayer = AudioPlayerFactory.open(uri);
+        audioPlayer.play();
+        return audioPlayer;
     }
 
     /**
