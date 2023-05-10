@@ -107,7 +107,7 @@ jobs:
           # list devices          
           ls -la /dev/snd
           # ALSA tools, list devices
-#          aplay --list-devices
+          # aplay --list-devices
           # PulseAudio tools, list nodes
           pactl list | grep node.name
           # PulseAudio tools, list sinks
