@@ -103,7 +103,6 @@ jobs:
         run: |
           # list devices          
           ls -la /dev/snd
-          ls -la /dev/audio
           # ALSA tools, list devices
           aplay --list-devices
           # PulseAudio tools, list nodes
