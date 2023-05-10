@@ -109,16 +109,12 @@ jobs:
           # ALSA tools, list devices
           # aplay --list-devices
           # PulseAudio tools, list nodes
-          pactl list
-          pactl list short sinks
-          pactl list | grep node.name
-          # PulseAudio tools, list sinks
           pactl list short sinks
           # list existing services
-          systemctl list-unit-files | grep pipewire 
+          # systemctl list-unit-files | grep pipewire 
           # systemctl --user restart pipewire-session-manager
           # check pipewire pulseaudio file 
-          ls -la /usr/share/pipewire/media-session.d/with-pulseaudio
+          # ls -la /usr/share/pipewire/media-session.d/with-pulseaudio
           # sudo touch /usr/share/pipewire/media-session.d/with-pulseaudio
           xvfb-run -a mvn --no-transfer-progress --batch-mode --file pom.xml install
           # xvfb-run -a mvn --no-transfer-progress --batch-mode --file pom.xml install -Dmaven.test.skip=true
