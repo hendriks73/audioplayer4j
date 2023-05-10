@@ -91,7 +91,8 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y pulseaudio jackd2 alsa-utils alsa-base dbus-x11
           sudo adduser $USER audio
-          systemctl --user restart pulseaudio 
+          systemctl --user restart pulseaudio
+          journalctl -e -u pulseaudio
 
       - name: Set up Java
         uses: actions/setup-java@v2
@@ -106,10 +107,10 @@ jobs:
           # list devices          
           ls -la /dev/snd
           # ALSA tools, list devices
-          aplay --list-devices
+#          aplay --list-devices
           # PulseAudio tools, list nodes
           pactl list | grep node.name
-          # PusleAudio tools, list sinks
+          # PulseAudio tools, list sinks
           pactl list short sinks
           # list existing services
           systemctl list-unit-files | grep pipewire 
